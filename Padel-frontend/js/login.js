@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const alertaError = document.getElementById('alerta-error');
     const togglePasswordBtn = passwordInput.nextElementSibling;
 
-    // Toggle password visibility
+    // Toggle password visibilidad
     togglePasswordBtn.addEventListener('click', () => {
         const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
         passwordInput.setAttribute('type', type);
@@ -38,11 +38,11 @@ document.addEventListener('DOMContentLoaded', () => {
         btnLogin.classList.add('opacity-80', 'cursor-not-allowed');
         spinnerLogin.classList.remove('hidden');
 
-        // Simulation
+        // Simulacion
         setTimeout(() => {
             if (email === 'admin@paddle.com' && password === '123456') {
                 console.log('Login exitoso, guardando JWT...');
-                // Redirigir o lógica de éxito aquí
+                // Redirigir o lógica de éxito
             } else {
                 alertaError.classList.remove('hidden');
             }

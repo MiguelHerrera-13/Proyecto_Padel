@@ -5,20 +5,20 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>Kinetic Court - Iniciar Sesión</title>
     
-<!-- 1. Primero el CDN de Tailwind -->
+<!-- CDN de Tailwind -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     
-    <!-- 2. Después tu configuración de colores -->
+    <!-- configuración de colores -->
     <script src="js/tailwind-config.js"></script>
     
     <!-- Fuentes e Íconos -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     
-    <!-- Tu CSS externo -->
+    <!-- CSS externo -->
     <link href="css/styles.css" rel="stylesheet"/>
     
-    <!-- Tu Lógica JS -->
+    <!-- Lógica JS -->
     <script src="js/login.js" defer></script>
 </head>
 <body class="bg-surface text-on-surface font-body antialiased min-h-screen flex items-center justify-center p-4">
@@ -40,12 +40,12 @@
             </div>
             
             <form action="#" class="space-y-6" method="POST">
-                <!-- Email Field -->
+                <!-- Email  -->
                 <div>
                     <label class="block font-label text-sm font-medium text-on-surface mb-2" for="email">Correo electrónico</label>
                     <input class="w-full bg-surface-container-highest border-transparent rounded-lg px-4 py-3 text-on-surface placeholder-on-surface-variant focus:border-transparent focus:ring-0 focus:bg-surface-container-lowest focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:bg-surface-container-lowest transition-colors duration-200" id="email" name="email" placeholder="tu@email.com" required="" type="email"/>
                 </div>
-                <!-- Password Field -->
+                <!-- Password -->
                 <div>
                     <div class="flex justify-between items-center mb-2">
                         <label class="block font-label text-sm font-medium text-on-surface" for="password">Contraseña</label>
@@ -71,7 +71,7 @@
                 </div>
             </form>
             
-            <!-- Secondary Action -->
+            <!-- Crear cuenta -->
             <div class="mt-6 text-center">
                 <a class="font-label text-sm text-primary font-semibold hover:bg-surface-container-high py-2 px-4 rounded-lg transition-colors inline-block" href="#">
                     Crear una cuenta nueva
