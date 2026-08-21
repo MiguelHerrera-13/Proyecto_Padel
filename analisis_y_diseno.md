@@ -1,6 +1,6 @@
 # Documento de Análisis y Diseño de Software
 **Proyecto:** Sistema de Gestión Indoor Paddle  
-**Rol:** Analista Funcional Senior  
+
 
 ---
 
