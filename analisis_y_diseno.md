@@ -197,7 +197,3 @@ classDiagram
 ```
 
 ---
-
-> [!TIP]
-> **Siguiente Paso Sugerido:**  
-> Como Analista, te sugiero que el **Manual de Uso** lo elaboremos en un archivo independiente o en formato PDF/Walkthrough detallado con capturas de pantalla, para que puedas entregarlo a tus clientes finales o empleados del club. Si lo deseas, puedo generarlo ahora mismo.
