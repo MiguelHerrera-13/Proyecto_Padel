@@ -1,0 +1,16 @@
+<div class="max-w-7xl mx-auto space-y-8">
+    <header class="mb-8">
+        <h1 class="font-headline text-4xl font-extrabold text-on-surface tracking-tight">Mis Reservas</h1>
+        <p class="text-on-surface-variant font-medium mt-1">Consultá tus próximos partidos y el historial de juego.</p>
+    </header>
+
+    <div class="bg-surface-container-lowest rounded-3xl p-6 md:p-10 shadow-sm border border-outline-variant/20">
+        <!-- Contenedor de Tarjetas inyectadas por JS -->
+        <div id="lista-mis-reservas" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <p class="text-on-surface-variant font-medium col-span-full">Cargando tus reservas...</p>
+        </div>
+    </div>
+</div>
+
+<div class="h-20"></div>
+<script src="js/controladores/cliente-mis-reservas.js"></script>

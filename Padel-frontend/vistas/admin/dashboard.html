@@ -1,0 +1,199 @@
+<!-- Metrics Row -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+                                <!-- Card 1 -->
+                                <div
+                                        class="card-no-line p-6 flex flex-col justify-between shadow-sm relative overflow-hidden group">
+                                        <div
+                                                class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                                <span
+                                                        class="material-symbols-outlined text-4xl text-primary">payments</span>
+                                        </div>
+                                        <p class="text-sm font-medium text-on-surface-variant mb-2">Ingresos Totales
+                                                (más)</p>
+                                        <h3 id="kpi-ingresos" class="font-headline text-3xl font-extrabold text-on-surface mb-3">$0
+                                        </h3>
+                                        <div
+                                                class="inline-flex items-center gap-1 text-xs font-semibold text-primary bg-primary-container/30 px-2.5 py-1 rounded-full w-fit">
+                                                <span class="material-symbols-outlined text-[14px]">trending_up</span>
+                                                Calculado en vivo
+                                        </div>
+                                </div>
+                                <!-- Card 2 -->
+                                <div class="card-no-line p-6 flex items-center justify-between shadow-sm">
+                                        <div>
+                                                <p class="text-sm font-medium text-on-surface-variant mb-2">Ocupación
+                                                        Promedio</p>
+                                                <h3 id="kpi-ocupacion" class="font-headline text-3xl font-extrabold text-on-surface">0%
+                                                </h3>
+                                        </div>
+                                        <div class="relative w-16 h-16 flex items-center justify-center">
+                                                <svg class="w-full h-full transform -rotate-90" viewbox="0 0 36 36">
+                                                        <path class="text-surface-container-high"
+                                                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                                fill="none" stroke="currentColor"
+                                                                stroke-dasharray="100, 100" stroke-width="3"></path>
+                                                        <path id="kpi-ocupacion-circle" class="text-primary-container"
+                                                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                                fill="none" stroke="currentColor"
+                                                                stroke-dasharray="0, 100" stroke-linecap="round"
+                                                                stroke-width="3"></path>
+                                                </svg>
+                                                <span id="kpi-ocupacion-txt" class="absolute text-xs font-bold text-on-surface">0%</span>
+                                        </div>
+                                </div>
+                                <!-- Card 3 -->
+                                <div class="card-no-line p-6 flex flex-col justify-between shadow-sm">
+                                        <div>
+                                                <div class="flex items-center justify-between mb-2">
+                                                        <p class="text-sm font-medium text-on-surface-variant">Nuevos
+                                                                Clientes</p>
+                                                        <span
+                                                                class="material-symbols-outlined text-secondary text-sm bg-surface-container p-1 rounded-md">person_add</span>
+                                                </div>
+                                                <h3 id="kpi-clientes" class="font-headline text-3xl font-extrabold text-on-surface mb-1">
+                                                        0</h3>
+                                        </div>
+                                        <p class="text-xs text-on-surface-variant mt-2">registrados en total</p>
+                                </div>
+                                <!-- Card 4 -->
+                                <div
+                                        class="card-no-line p-6 flex flex-col justify-between shadow-sm border-l-4 border-error/50">
+                                        <div>
+                                                <div class="flex items-center gap-2 mb-2">
+                                                        <span
+                                                                class="material-symbols-outlined text-error text-sm">warning</span>
+                                                        <p class="text-sm font-medium text-error">Alertas de Stock</p>
+                                                </div>
+                                                <h3 id="kpi-stock" class="font-headline text-3xl font-extrabold text-on-surface mb-1">0
+                                                </h3>
+                                        </div>
+                                        <p class="text-xs text-error mt-2 font-medium">productos bajo stock</p>
+                                </div>
+                        </div>
+                        <!-- Charts Row -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                                <!-- Chart Card 1 (Large) -->
+                                <div class="card-no-line p-6 shadow-sm lg:col-span-2 flex flex-col">
+                                        <h3 class="font-headline text-lg font-bold text-on-surface mb-6">Ingresos por
+                                                Cancha</h3>
+                                        <div
+                                                class="flex-1 flex items-end gap-8 h-48 px-4 pb-2 border-b border-surface-container-high/50 relative">
+                                                <!-- Y Axis Labels -->
+                                                <div
+                                                        class="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-on-surface-variant -ml-2">
+                                                        <span>$150k</span>
+                                                        <span>$100k</span>
+                                                        <span>$50k</span>
+                                                        <span>0</span>
+                                                </div>
+                                                <!-- Bars -->
+                                                <div class="flex-1 flex flex-col items-center gap-2 group">
+                                                        <div
+                                                                class="w-full max-w-[60px] h-[80%] bg-surface-container-high rounded-t-xl relative overflow-hidden transition-all group-hover:bg-primary-container/20">
+                                                                <div
+                                                                        class="absolute bottom-0 w-full h-full bg-gradient-to-t from-primary to-primary-container opacity-80 rounded-t-xl">
+                                                                </div>
+                                                        </div>
+                                                        <span class="text-sm font-medium text-on-surface-variant">Cancha
+                                                                1</span>
+                                                </div>
+                                                <div class="flex-1 flex flex-col items-center gap-2 group">
+                                                        <div
+                                                                class="w-full max-w-[60px] h-[65%] bg-surface-container-high rounded-t-xl relative overflow-hidden transition-all group-hover:bg-primary-container/20">
+                                                                <div
+                                                                        class="absolute bottom-0 w-full h-full bg-gradient-to-t from-primary to-primary-container opacity-60 rounded-t-xl">
+                                                                </div>
+                                                        </div>
+                                                        <span class="text-sm font-medium text-on-surface-variant">Cancha
+                                                                2</span>
+                                                </div>
+                                                <div class="flex-1 flex flex-col items-center gap-2 group">
+                                                        <div
+                                                                class="w-full max-w-[60px] h-[95%] bg-surface-container-high rounded-t-xl relative overflow-hidden transition-all group-hover:bg-primary-container/20">
+                                                                <div
+                                                                        class="absolute bottom-0 w-full h-full bg-gradient-to-t from-primary to-primary-container opacity-100 rounded-t-xl">
+                                                                </div>
+                                                        </div>
+                                                        <span class="text-sm font-medium text-on-surface-variant">Cancha
+                                                                3</span>
+                                                </div>
+                                        </div>
+                                </div>
+                                <!-- Chart Card 2 (Medium) -->
+                                <div class="card-no-line p-6 shadow-sm flex flex-col">
+                                        <h3 class="font-headline text-lg font-bold text-on-surface mb-6">Horarios más
+                                                demandados</h3>
+                                        <div class="flex-1 flex flex-col justify-center gap-4">
+                                                <div class="flex items-center gap-3">
+                                                        <span
+                                                                class="text-xs w-12 text-right font-medium text-on-surface-variant">08:00</span>
+                                                        <div
+                                                                class="flex-1 h-3 bg-surface-container rounded-full overflow-hidden">
+                                                                <div
+                                                                        class="h-full bg-surface-variant w-[30%] rounded-full">
+                                                                </div>
+                                                        </div>
+                                                </div>
+                                                <div class="flex items-center gap-3">
+                                                        <span
+                                                                class="text-xs w-12 text-right font-medium text-on-surface-variant">12:00</span>
+                                                        <div
+                                                                class="flex-1 h-3 bg-surface-container rounded-full overflow-hidden">
+                                                                <div class="h-full bg-primary/40 w-[50%] rounded-full">
+                                                                </div>
+                                                        </div>
+                                                </div>
+                                                <div class="flex items-center gap-3">
+                                                        <span
+                                                                class="text-xs w-12 text-right font-medium text-on-surface-variant">18:00</span>
+                                                        <div
+                                                                class="flex-1 h-3 bg-surface-container rounded-full overflow-hidden">
+                                                                <div class="h-full bg-primary w-[90%] rounded-full">
+                                                                </div>
+                                                        </div>
+                                                </div>
+                                                <div class="flex items-center gap-3">
+                                                        <span
+                                                                class="text-xs w-12 text-right font-medium text-on-surface-variant">21:00</span>
+                                                        <div
+                                                                class="flex-1 h-3 bg-surface-container rounded-full overflow-hidden">
+                                                                <div
+                                                                        class="h-full bg-primary-container w-[75%] rounded-full">
+                                                                </div>
+                                                        </div>
+                                                </div>
+                                        </div>
+                                </div>
+                        </div>
+                        <!-- History Table -->
+                        <div class="card-no-line shadow-sm overflow-hidden mb-8">
+                                <div class="p-6 pb-4">
+                                        <h3 class="font-headline text-lg font-bold text-on-surface">Ultimas Cajas
+                                                (Registros de Movimientos)</h3>
+                                </div>
+                                <div class="w-full overflow-x-auto">
+                                        <table class="w-full text-left text-sm whitespace-nowrap">
+                                                <thead class="text-xs text-on-surface-variant bg-surface-container-low">
+                                                        <tr>
+                                                                <th class="px-6 py-4 font-medium" scope="col">Fecha</th>
+                                                                <th class="px-6 py-4 font-medium" scope="col">Empleado
+                                                                </th>
+                                                                <th class="px-6 py-4 font-medium" scope="col">Concepto
+                                                                </th>
+                                                                <th class="px-6 py-4 font-medium" scope="col">Monto
+                                                                </th>
+                                                                <th class="px-6 py-4 font-medium text-right"
+                                                                        scope="col">Tipo</th>
+                                                        </tr>
+                                                </thead>
+                                                <tbody id="kpi-ultimas-cajas" class="divide-y divide-surface-container-high/30">
+                                                        <tr class="hover:bg-surface-container-low/50 transition-colors">
+                                                                <td colspan="5" class="px-6 py-4 text-center text-on-surface-variant">Cargando movimientos...</td>
+                                                        </tr>
+                                                </tbody>
+                                        </table>
+                                </div>
+                        </div>
+
+<script src="js/controladores/admin-dashboard.js"></script>
+

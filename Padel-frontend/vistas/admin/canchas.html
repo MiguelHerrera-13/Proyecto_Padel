@@ -1,0 +1,202 @@
+<div class="max-w-7xl mx-auto mb-12">
+    <h2 class="text-4xl font-headline font-extrabold tracking-tight text-on-surface mb-2">Configuración de Canchas y
+        Tarifas</h2>
+    <p class="text-lg font-body text-secondary max-w-2xl">Gestiona los parámetros y los precios específicos de cada
+        cancha.</p>
+</div>
+<div class="max-w-7xl mx-auto space-y-10">
+    <section class="bg-surface-container-lowest rounded-xl p-8 relative overflow-hidden"
+        style="box-shadow: 0px 24px 48px -12px rgba(23, 28, 31, 0.04);">
+        <h3 class="text-xl font-headline font-bold text-on-surface mb-6">Parámetros y Precios</h3>
+        <div class="flex flex-col md:flex-row gap-6 items-end">
+            <div class="flex-1 w-full">
+                <label class="block text-sm font-medium font-body text-on-surface mb-2">Valor de la Seña Fija ($)</label>
+                <div class="relative input-ghost rounded-xl bg-surface-container-highest transition-colors">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <span class="material-symbols-outlined text-secondary text-sm">attach_money</span>
+                    </div>
+                    <input id="param-sena" class="block w-full pl-10 pr-4 py-3 bg-transparent border-none rounded-xl text-base font-body text-on-surface focus:ring-0 focus:outline-none" type="number" value="2500" />
+                </div>
+            </div>
+            <div class="flex-1 w-full">
+                <label class="block text-sm font-medium font-body text-on-surface mb-2">Tiempo límite para cancelar (Horas)</label>
+                <div class="relative input-ghost rounded-xl bg-surface-container-highest transition-colors">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <span class="material-symbols-outlined text-secondary text-sm">schedule</span>
+                    </div>
+                    <input id="param-tiempo-cancelacion" class="block w-full pl-10 pr-4 py-3 bg-transparent border-none rounded-xl text-base font-body text-on-surface focus:ring-0 focus:outline-none" type="number" value="24" />
+                </div>
+            </div>
+            <div class="flex-1 w-full">
+                <label class="block text-sm font-medium font-body text-on-surface mb-2">Hora de inicio Turno Noche</label>
+                <div class="relative input-ghost rounded-xl bg-surface-container-highest transition-colors">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <span class="material-symbols-outlined text-secondary text-sm">dark_mode</span>
+                    </div>
+                    <input id="param-hora-noche" class="block w-full pl-10 pr-4 py-3 bg-transparent border-none rounded-xl text-base font-body text-on-surface focus:ring-0 focus:outline-none" type="time" value="18:00" />
+                </div>
+            </div>
+            <div class="w-full md:w-auto mt-4 md:mt-0">
+                <button id="btn-guardar-parametros" class="w-full md:w-auto px-8 py-3 rounded-xl bg-primary text-on-primary font-bold font-body hover:bg-primary-container hover:text-on-primary-container transition-all duration-300">
+                    Guardar Parámetros 
+                </button>
+            </div>
+        </div>
+    </section>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <article
+            class="bg-surface-container-lowest rounded-xl p-6 flex flex-col hover:bg-surface-container-low transition-colors duration-300"
+            style="box-shadow: 0px 24px 48px -12px rgba(23, 28, 31, 0.04);">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h4 class="text-2xl font-headline font-bold text-on-surface">Cancha 1</h4>
+                    <p class="text-sm font-body text-secondary mt-1 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[16px]" data-icon="roofing">roofing</span> Techada /
+                        Blindex
+                    </p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer mr-2">
+                    <input type="checkbox" id="toggle1" class="sr-only peer" checked>
+                    <div class="w-12 h-6 bg-surface-variant rounded-full peer peer-checked:after:translate-x-6 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:shadow-sm after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+            </div>
+            <div class="space-y-4 flex-1">
+                <div
+                    class="flex items-center justify-between p-3 rounded-xl bg-surface-container-highest bg-opacity-50">
+                    <span class="text-sm font-body font-medium text-secondary">Costo Base (60 min)</span>
+                    <div class="flex items-center text-on-surface font-headline font-bold">
+                        <span class="text-secondary mr-1">$</span>
+                        <span>8500</span>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-xl bg-surface">
+                    <span class="text-sm font-body text-secondary">Recargo por 90 min</span>
+                    <div class="flex items-center text-on-surface font-body font-medium">
+                        <span class="text-secondary mr-1">+$</span>
+                        <span>4000</span>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-xl bg-surface">
+                    <span class="text-sm font-body text-secondary">Recargo por 120 min</span>
+                    <div class="flex items-center text-on-surface font-body font-medium">
+                        <span class="text-secondary mr-1">+$</span>
+                        <span>7000</span>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-xl bg-surface">
+                    <span class="text-sm font-body text-secondary">Recargo por Iluminación</span>
+                    <div class="flex items-center text-on-surface font-body font-medium">
+                        <span class="text-secondary mr-1">+$</span>
+                        <span>1500</span>
+                    </div>
+                </div>
+            </div>
+            <button
+                class="mt-6 w-full py-3 rounded-xl text-primary font-bold font-body bg-transparent hover:bg-surface-container-high transition-colors duration-300">
+                Actualizar Tarifas </button>
+        </article>
+        <article
+            class="bg-surface-container-lowest rounded-xl p-6 flex flex-col hover:bg-surface-container-low transition-colors duration-300"
+            style="box-shadow: 0px 24px 48px -12px rgba(23, 28, 31, 0.04);">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h4 class="text-2xl font-headline font-bold text-on-surface">Cancha 2</h4>
+                    <p class="text-sm font-body text-secondary mt-1 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[16px]" data-icon="sunny">sunny</span> Descubierta /
+                        Muro
+                    </p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer mr-2">
+                    <input type="checkbox" id="toggle2" class="sr-only peer" checked>
+                    <div class="w-12 h-6 bg-surface-variant rounded-full peer peer-checked:after:translate-x-6 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:shadow-sm after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+            </div>
+            <div class="space-y-4 flex-1">
+                <div
+                    class="flex items-center justify-between p-3 rounded-xl bg-surface-container-highest bg-opacity-50">
+                    <span class="text-sm font-body font-medium text-secondary">Costo Base (60 min)</span>
+                    <div class="flex items-center text-on-surface font-headline font-bold">
+                        <span class="text-secondary mr-1">$</span>
+                        <span>7000</span>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-xl bg-surface">
+                    <span class="text-sm font-body text-secondary">Recargo por 90 min</span>
+                    <div class="flex items-center text-on-surface font-body font-medium">
+                        <span class="text-secondary mr-1">+$</span>
+                        <span>3500</span>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-xl bg-surface">
+                    <span class="text-sm font-body text-secondary">Recargo por 120 min</span>
+                    <div class="flex items-center text-on-surface font-body font-medium">
+                        <span class="text-secondary mr-1">+$</span>
+                        <span>6000</span>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-xl bg-surface">
+                    <span class="text-sm font-body text-secondary">Recargo por Iluminación</span>
+                    <div class="flex items-center text-on-surface font-body font-medium">
+                        <span class="text-secondary mr-1">+$</span>
+                        <span>1500</span>
+                    </div>
+                </div>
+            </div>
+            <button
+                class="mt-6 w-full py-3 rounded-xl text-primary font-bold font-body bg-transparent hover:bg-surface-container-high transition-colors duration-300">
+                Actualizar Tarifas </button>
+        </article>
+        <article
+            class="bg-surface-container-lowest rounded-xl p-6 flex flex-col hover:bg-surface-container-low transition-colors duration-300"
+            style="box-shadow: 0px 24px 48px -12px rgba(23, 28, 31, 0.04);">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h4 class="text-2xl font-headline font-bold text-on-surface">Cancha 3</h4>
+                    <p class="text-sm font-body text-secondary mt-1 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[16px]" data-icon="star">star</span> Premium /
+                        Panoramica
+                    </p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer mr-2">
+                    <input type="checkbox" id="toggle3" class="sr-only peer">
+                    <div class="w-12 h-6 bg-surface-variant rounded-full peer peer-checked:after:translate-x-6 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:shadow-sm after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+            </div>
+            <div class="space-y-4 flex-1 opacity-50 pointer-events-none grayscale">
+                <div
+                    class="flex items-center justify-between p-3 rounded-xl bg-surface-container-highest bg-opacity-50">
+                    <span class="text-sm font-body font-medium text-secondary">Costo Base (60 min)</span>
+                    <div class="flex items-center text-on-surface font-headline font-bold">
+                        <span class="text-secondary mr-1">$</span>
+                        <span>10000</span>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-xl bg-surface">
+                    <span class="text-sm font-body text-secondary">Recargo por 90 min</span>
+                    <div class="flex items-center text-on-surface font-body font-medium">
+                        <span class="text-secondary mr-1">+$</span>
+                        <span>5000</span>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-xl bg-surface">
+                    <span class="text-sm font-body text-secondary">Recargo por 120 min</span>
+                    <div class="flex items-center text-on-surface font-body font-medium">
+                        <span class="text-secondary mr-1">+$</span>
+                        <span>9000</span>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-xl bg-surface">
+                    <span class="text-sm font-body text-secondary">Recargo por Iluminación</span>
+                    <div class="flex items-center text-on-surface font-body font-medium">
+                        <span class="text-secondary mr-1">+$</span>
+                        <span>1500</span>
+                    </div>
+                </div>
+            </div>
+            <button
+                class="mt-6 w-full py-3 rounded-xl text-secondary font-bold font-body bg-transparent hover:bg-surface-container-high transition-colors duration-300">
+                En Mantenimiento </button>
+        </article>
+    </div>
+</div>
+<div class="h-20"></div> <script src="js/controladores/admin-canchas.js"></script>

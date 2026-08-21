@@ -1,0 +1,156 @@
+<!-- Page Header -->
+<div class="flex justify-between items-end">
+<div>
+<h1 class="text-4xl font-headline font-extrabold text-on-surface tracking-tight">Inventario y Tienda</h1>
+<p class="text-on-surface-variant font-body mt-2 text-sm">Gestiona el catálogo de productos, alquileres y niveles de stock.</p>
+</div>
+<button id="btn-nuevo-producto" class="bg-gradient-to-r from-primary to-primary-container text-on-primary px-6 py-3 rounded-xl font-headline font-bold flex items-center gap-2 hover:shadow-[0px_12px_24px_-8px_rgba(68,105,0,0.3)] transition-all">
+<span class="material-symbols-outlined font-bold text-[20px]">add</span> Nuevo Producto </button>
+</div>
+<!-- KPI Cards (Bento style) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- KPI 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-6 relative overflow-hidden group">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-surface-container-low rounded-full opacity-50 group-hover:scale-110 transition-transform"></div>
+<div class="relative z-10">
+<p class="text-on-surface-variant font-body text-sm font-semibold uppercase tracking-wider mb-2">Total de Productos Activos</p>
+<div class="flex items-end gap-4">
+<span id="kpi-total-productos" class="text-5xl font-headline font-black text-on-surface">0</span>
+<span class="material-symbols-outlined text-primary mb-1 text-3xl">category</span>
+</div>
+</div>
+</div>
+<!-- KPI 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-6 relative overflow-hidden group">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-error-container/30 rounded-full opacity-50 group-hover:scale-110 transition-transform"></div>
+<div class="relative z-10">
+<p class="text-on-surface-variant font-body text-sm font-semibold uppercase tracking-wider mb-2">Productos con Bajo Stock</p>
+<div class="flex items-end gap-4">
+<span id="kpi-bajo-stock" class="text-5xl font-headline font-black text-error">0</span>
+<span class="material-symbols-outlined text-error mb-1 text-3xl">warning</span>
+</div>
+</div>
+</div>
+<!-- KPI 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-6 relative overflow-hidden group">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-surface-container-low rounded-full opacity-50 group-hover:scale-110 transition-transform"></div>
+<div class="relative z-10">
+<p class="text-on-surface-variant font-body text-sm font-semibold uppercase tracking-wider mb-2">Valor Total del Inventario</p>
+<div class="flex items-end gap-4">
+<span id="kpi-valor-inventario" class="text-5xl font-headline font-black text-on-surface">$0</span>
+<span class="material-symbols-outlined text-primary mb-1 text-3xl">payments</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Filters & Actions Area -->
+<div class="bg-surface-container-low rounded-xl p-2 flex flex-col md:flex-row gap-4 items-center">
+<!-- Search -->
+<div class="flex-grow flex items-center bg-surface-container-lowest rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-primary/40 transition-all w-full md:w-auto">
+<span class="material-symbols-outlined text-on-surface-variant mr-3">search</span>
+<input class="bg-transparent border-none focus:ring-0 w-full text-sm font-body text-on-surface placeholder-on-surface-variant/60 p-0" placeholder="Buscar producto por nombre o código" type="text"/>
+</div>
+<!-- Category Filter -->
+<div class="relative min-w-[200px] w-full md:w-auto">
+<select class="w-full bg-none appearance-none bg-surface-container-lowest rounded-xl px-4 py-3 pr-10 text-sm font-body text-on-surface border-none focus:ring-2 focus:ring-primary/40 cursor-pointer">
+<option>Todas las categorías</option>
+<option>Bebidas</option>
+<option>Snacks</option>
+<option>Equipamiento</option>
+<option>Alquileres</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+<button class="bg-surface-container-lowest text-on-surface p-3 rounded-xl hover:bg-surface-container-highest transition-colors shadow-sm flex-shrink-0">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</div>
+<!-- Data List (High-end table alternative) -->
+<div class="bg-surface-container-lowest rounded-xl flex flex-col shadow-sm">
+<!-- Header -->
+<div class="grid grid-cols-12 gap-4 px-6 py-4 text-xs font-headline font-bold text-on-surface-variant uppercase tracking-wider items-center bg-surface-container-low rounded-t-xl">
+<div class="col-span-1">Código</div>
+<div class="col-span-3">Producto</div>
+<div class="col-span-2">Categoría</div>
+<div class="col-span-1 text-right">Stock Actual</div>
+<div class="col-span-1 text-right">P. Compra</div>
+<div class="col-span-1 text-right">P. Venta</div>
+<div class="col-span-2 text-center">Estado</div>
+<div class="col-span-1 text-center">Acciones</div>
+</div>
+<!-- Rows -->
+<div id="stock-table-body" class="flex flex-col p-2 gap-1">
+    <!-- Aquí se insertan los productos dinámicamente desde JS -->
+</div>
+<!-- Pagination / Footer area of list -->
+<div class="px-6 py-4 bg-surface-container-low rounded-b-xl flex justify-between items-center text-sm font-body text-on-surface-variant mt-2 border-t border-surface-container-highest/50">
+<span id="txt-mostrando-productos">Mostrando 0 productos</span>
+<div class="flex gap-2">
+<button class="p-1 hover:bg-surface-container-highest rounded-lg transition-colors"><span class="material-symbols-outlined text-[20px]">chevron_left</span></button>
+<button class="p-1 hover:bg-surface-container-highest rounded-lg transition-colors"><span class="material-symbols-outlined text-[20px]">chevron_right</span></button>
+</div>
+</div>
+</div>
+
+<!-- Modal Nuevo/Editar Producto -->
+<dialog id="modal-producto" class="bg-transparent m-auto p-0 backdrop:bg-surface-container-highest/60 backdrop:backdrop-blur-sm transition-all w-full max-w-lg">
+    <div class="bg-surface-container-lowest rounded-2xl p-8 shadow-2xl border border-outline-variant/20 flex flex-col gap-6">
+        <div class="flex justify-between items-center">
+            <h2 id="modal-titulo" class="font-headline font-extrabold text-2xl text-on-surface">Nuevo Producto</h2>
+            <button id="btn-cerrar-modal" class="text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full transition-colors flex items-center justify-center">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        
+        <form id="form-producto" class="flex flex-col gap-4">
+            <input type="hidden" id="producto-id" name="id" value="">
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1.5">
+                    <label class="font-label text-sm font-semibold text-on-surface-variant">Código</label>
+                    <input type="text" id="producto-codigo" name="codigo" required class="w-full bg-surface-container-highest text-on-surface font-medium rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-primary transition-all placeholder-on-surface-variant/40" placeholder="Ej. 001">
+                </div>
+                <div class="space-y-1.5">
+                    <label class="font-label text-sm font-semibold text-on-surface-variant">Categoría</label>
+                    <div class="relative">
+                        <select id="producto-categoria" name="categoria" required class="w-full bg-none bg-surface-container-highest text-on-surface font-medium rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-primary transition-all appearance-none cursor-pointer">
+                            <option value="Bebidas">Bebidas</option>
+                            <option value="Snacks">Snacks</option>
+                            <option value="Equipamiento">Equipamiento</option>
+                            <option value="Alquileres">Alquileres</option>
+                        </select>
+                        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="font-label text-sm font-semibold text-on-surface-variant">Nombre del Producto</label>
+                <input type="text" id="producto-nombre" name="nombre" required class="w-full bg-surface-container-highest text-on-surface font-medium rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-primary transition-all placeholder-on-surface-variant/40" placeholder="Ej. Agua Mineral">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1.5">
+                    <label class="font-label text-sm font-semibold text-on-surface-variant">Stock Actual</label>
+                    <input type="number" id="producto-stock" name="stock_actual" min="0" required class="w-full bg-surface-container-highest text-on-surface font-medium rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-primary transition-all placeholder-on-surface-variant/40" placeholder="0">
+                </div>
+                <div class="space-y-1.5">
+                    <label class="font-label text-sm font-semibold text-on-surface-variant">Precio de Venta ($)</label>
+                    <input type="number" id="producto-precio" name="precio_venta" min="0" step="0.01" required class="w-full bg-surface-container-highest text-on-surface font-medium rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-primary transition-all placeholder-on-surface-variant/40" placeholder="0.00">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-4">
+                <button type="button" id="btn-cancelar-modal" class="px-6 py-3 rounded-xl font-headline font-bold text-primary hover:bg-surface-container-highest transition-colors">Cancelar</button>
+                <button type="submit" id="btn-guardar-producto" class="bg-primary text-on-primary px-6 py-3 rounded-xl font-headline font-bold flex items-center gap-2 hover:shadow-lg hover:shadow-primary/30 transition-all">
+                    Guardar Producto
+                </button>
+            </div>
+        </form>
+    </div>
+</dialog>
+
+<script src="js/controladores/admin-stock.js"></script> 
+
+
+
