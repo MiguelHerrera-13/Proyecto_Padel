@@ -105,16 +105,20 @@ erDiagram
         int id PK
         int cancha_id FK
         int cliente_id FK
+        varchar cliente_nombre
         date fecha
         time hora_inicio
+        int duracion
         time hora_fin
-        enum estado
+        string estado "CONFIRMADO, FINALIZADO, CANCELADO"
+        string estado_pago "NO_PAGO, SENA, PAGADO"
+        decimal monto_total
     }
 
     CAJA_MOVIMIENTOS {
         int id PK
         int usuario_id FK
-        enum tipo "INGRESO, EGRESO"
+        string tipo "INGRESO, INGRESO_MP, EGRESO, RETIRO"
         varchar concepto
         decimal monto
         timestamp fecha_hora

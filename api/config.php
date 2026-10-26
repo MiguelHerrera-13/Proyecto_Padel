@@ -2,11 +2,7 @@
 $host = '127.0.0.1';
 $db   = 'indoor_paddle'; 
 $user = 'root';          
-$pass = '';              
 $charset = 'utf8mb4';
-
-
-$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
 
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
@@ -14,11 +10,22 @@ $options = [
     PDO::ATTR_EMULATE_PREPARES   => false,
 ];
 
-try {
-    $pdo = new PDO($dsn, $user, $pass, $options);
-} catch (\PDOException $e) {
-    // Si hay un error de conexión, se devuelve un error HTTP 500 en formato JSON
-    header('Content-Type: application/json', true, 500);
-    echo json_encode(["error" => "Error de conexión a la base de datos: " . $e->getMessage()]);
-    exit;
+$passwords = ['Acormaxi1325$%', ''];
+$pdo = null;
+$ultimoError = '';
+
+foreach ($passwords as $pass) {
+    try {
+        $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+        $pdo = new PDO($dsn, $user, $pass, $options);
+        break;
+    } catch (\PDOException $e) {
+        $ultimoError = $e->getMessage();
+    }
 }
+
+if (!$pdo) {
+    header('Content-Type: application/json', true, 500);
+    echo json_encode(["error" => "Error de conexión a la base de datos: " . $ultimoError]);
+    exit;
+}

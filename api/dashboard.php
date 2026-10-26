@@ -26,8 +26,8 @@ switch ($metodo) {
                 'ultimasCajas' => []
             ];
 
-            // 1. Ingresos Totales (Suma de montos tipo INGRESO)
-            $sqlIngresos = "SELECT SUM(monto) as total FROM caja_movimientos WHERE tipo = 'INGRESO'";
+            // 1. Ingresos Totales (Suma de montos tipo INGRESO e INGRESO_MP)
+            $sqlIngresos = "SELECT SUM(monto) as total FROM caja_movimientos WHERE tipo IN ('INGRESO', 'INGRESO_MP')";
             $stmt = $pdo->query($sqlIngresos);
             $res = $stmt->fetch();
             if ($res && $res['total']) {

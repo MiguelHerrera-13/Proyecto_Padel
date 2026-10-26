@@ -66,17 +66,8 @@ window.LayoutManager = {
         const menuContainer = document.getElementById('sidebar-menu');
         const items = this.menus[usuarioLogueado.rol] || [];
         const btnToggle = document.getElementById('btn-toggle-menu');
-        
-        // El cliente tiene un layout más simple (Centric), podríamos ocultar el sidebar entero
-        if (usuarioLogueado.rol === 'CLIENTE') {
-            document.getElementById('sidebar-container').classList.add('hidden');
-            document.getElementById('sidebar-container').classList.remove('md:flex');
-            document.getElementById('main-wrapper').classList.remove('md:ml-72'); 
-            if (btnToggle) btnToggle.classList.add('hidden');
-            return;
-        }
 
-        // Para ADMIN y EMPLEADO, construimos el menú
+        // Mostrar sidebar para todos los roles de forma consistente y fluida
         document.getElementById('sidebar-container').classList.remove('hidden');
         document.getElementById('sidebar-container').classList.add('hidden', 'md:flex');
         document.getElementById('main-wrapper').classList.add('md:ml-72');
@@ -120,7 +111,6 @@ window.LayoutManager = {
     },
 
     actualizarTopBar: function(hash) {
-        // Podríamos actualizar el título dinámicamente 
         const titulo = document.getElementById('topbar-title');
         if (!titulo) return;
         
@@ -130,12 +120,7 @@ window.LayoutManager = {
         else if (hash.includes('clientes')) titulo.textContent = 'Socios del Club';
         else if (hash.includes('agenda')) titulo.textContent = 'Agenda de Turnos';
         else if (hash.includes('caja')) titulo.textContent = 'Gestión de Caja';
+        else if (hash.includes('mis-reservas')) titulo.textContent = 'Mis Reservas';
         else if (hash.includes('reserva')) titulo.textContent = 'Nueva Reserva';
-        const htmlBotonOscuro = `
-    <button onclick="alternarModoOscuro()" class="p-2 rounded-full hover:bg-surface-container-high transition-colors flex items-center justify-center">
-        <span class="material-symbols-outlined dark:hidden">dark_mode</span>
-        <span class="material-symbols-outlined hidden dark:block">light_mode</span>
-    </button>
-`;
     }
 };

@@ -1,301 +1,329 @@
 (function() {
-    console.log("Controlador de Agenda Iniciado");
+    console.log("Controlador de Caja Iniciado");
 
-    // --- MANEJO DEL TICKET (CARRITO) ---
-    let ticketCarrito = [];
-    let numeroTicket = Math.floor(Math.random() * 1000) + 1000;
-    
-    const contenedorTicket = document.getElementById('ticket-items');
-    const labelTotal = document.getElementById('ticket-total');
-    const btnCobrar = document.getElementById('btn-cobrar-ticket');
-    
-    if(document.getElementById('ticket-id')) document.getElementById('ticket-id').textContent = `Ticket #${numeroTicket}`;
-    if(document.getElementById('fecha-hoy-txt')) document.getElementById('fecha-hoy-txt').textContent = "Hoy, " + new Date().toLocaleDateString('es-AR', {day: 'numeric', month: 'short'});
+    // Elementos de la interfaz
+    const kpiEfectivo = document.getElementById('kpi-efectivo');
+    const kpiDigitales = document.getElementById('kpi-digitales');
+    const kpiTotal = document.getElementById('kpi-total');
 
-    function renderizarTicket() {
-        if(!contenedorTicket) return;
-        contenedorTicket.innerHTML = '';
-        let total = 0;
+    const selectTipo = document.getElementById('caja-tipo');
+    const contenedorProducto = document.getElementById('contenedor-producto');
+    const selectProducto = document.getElementById('caja-producto-select');
+    const contenedorProveedor = document.getElementById('contenedor-proveedor');
+    const selectProveedor = document.getElementById('caja-proveedor-select');
+    const inputMonto = document.getElementById('caja-monto');
+    const inputConcepto = document.getElementById('caja-concepto');
+    const btnRegistrar = document.getElementById('btn-registrar-caja');
+    const contenedorHistorial = document.getElementById('caja-historial');
 
-        if (ticketCarrito.length === 0) {
-            contenedorTicket.innerHTML = '<p class="text-center text-on-surface-variant text-sm mt-10">El ticket está vacío.</p>';
-            if(labelTotal) labelTotal.textContent = '$0';
+    // Elementos del Modal de Cierre
+    const modalCierre = document.getElementById('modal-cierre-caja');
+    const btnAbrirCierre = document.getElementById('btn-cerrar-caja');
+    const btnCancelarCierre = document.getElementById('btn-cancelar-cierre');
+    const btnConfirmarCierre = document.getElementById('btn-confirmar-cierre');
+
+    const txtCierreIngresos = document.getElementById('cierre-ingresos');
+    const txtCierreDigitales = document.getElementById('cierre-digitales');
+    const txtCierreEgresos = document.getElementById('cierre-egresos');
+    const txtCierreBalance = document.getElementById('cierre-balance');
+
+    let catalogoProductos = [];
+    let movimientosActuales = [];
+
+    // 1. Cargar catálogo de productos para venta rápida opcional
+    async function cargarCatalogoProductos() {
+        if (!selectProducto) return;
+        try {
+            const res = await fetch('../api/stock.php');
+            if (res.ok) {
+                catalogoProductos = await res.json();
+                selectProducto.innerHTML = '<option value="">-- Venta manual o sin producto --</option>';
+                catalogoProductos.forEach(p => {
+                    const stockNum = parseInt(p.stock_actual ?? p.stockActual ?? 0);
+                    selectProducto.innerHTML += `
+                        <option value="${p.id}" data-precio="${p.precio_venta}" data-nombre="${p.nombre}" data-stock="${stockNum}">
+                            ${p.nombre} ($${parseFloat(p.precio_venta).toLocaleString('es-AR')}) - Stock: ${stockNum}
+                        </option>
+                    `;
+                });
+            }
+        } catch (e) {
+            console.warn("No se pudo cargar catálogo de productos en caja:", e);
+        }
+    }
+
+    // 2. Alternar campos según el tipo de movimiento seleccionado
+    if (selectTipo) {
+        selectTipo.addEventListener('change', () => {
+            const tipo = selectTipo.value;
+            if (tipo === 'INGRESO' || tipo === 'INGRESO_MP') {
+                if (contenedorProducto) contenedorProducto.classList.remove('hidden');
+                if (contenedorProveedor) contenedorProveedor.classList.add('hidden');
+            } else if (tipo === 'EGRESO') {
+                if (contenedorProducto) contenedorProducto.classList.add('hidden');
+                if (contenedorProveedor) contenedorProveedor.classList.remove('hidden');
+            } else {
+                if (contenedorProducto) contenedorProducto.classList.add('hidden');
+                if (contenedorProveedor) contenedorProveedor.classList.add('hidden');
+            }
+        });
+    }
+
+    // 3. Al seleccionar un producto, autocompletar monto y concepto
+    if (selectProducto) {
+        selectProducto.addEventListener('change', () => {
+            const selectedOption = selectProducto.options[selectProducto.selectedIndex];
+            if (selectedOption && selectedOption.value) {
+                const precio = selectedOption.dataset.precio;
+                const nombre = selectedOption.dataset.nombre;
+                if (inputMonto) inputMonto.value = precio;
+                if (inputConcepto) inputConcepto.value = `Venta mostrador: ${nombre}`;
+            }
+        });
+    }
+
+    // 4. Cargar y renderizar movimientos de caja desde MySQL
+    async function cargarMovimientos() {
+        try {
+            const res = await fetch('../api/caja.php');
+            if (!res.ok) throw new Error("Error al obtener movimientos de caja");
+            movimientosActuales = await res.json();
+            renderizarHistorialYTotales(movimientosActuales);
+        } catch (e) {
+            console.error("Error al cargar movimientos:", e);
+            if (contenedorHistorial) {
+                contenedorHistorial.innerHTML = `<p class="text-sm text-error text-center py-4">Error de conexión al cargar movimientos de caja.</p>`;
+            }
+        }
+    }
+
+    function renderizarHistorialYTotales(movimientos) {
+        let totalEfectivoIngresos = 0;
+        let totalDigitales = 0;
+        let totalEgresosYRetiros = 0;
+
+        if (contenedorHistorial) contenedorHistorial.innerHTML = '';
+
+        if (!movimientos || movimientos.length === 0) {
+            if (contenedorHistorial) {
+                contenedorHistorial.innerHTML = `
+                    <div class="text-center py-10 text-on-surface-variant/60">
+                        <span class="material-symbols-outlined text-4xl mb-2">receipt_long</span>
+                        <p class="text-sm font-medium">No hay movimientos registrados hoy.</p>
+                    </div>`;
+            }
+            if (kpiEfectivo) kpiEfectivo.textContent = '$ 0';
+            if (kpiDigitales) kpiDigitales.textContent = '$ 0';
+            if (kpiTotal) kpiTotal.textContent = '$ 0';
             return;
         }
 
-        ticketCarrito.forEach((item, index) => {
-            total += parseFloat(item.precio);
-            contenedorTicket.innerHTML += `
-            <div class="flex justify-between items-center bg-surface-container-low p-3 rounded-xl group relative shadow-sm border border-outline-variant/10">
-                <p class="font-semibold text-sm text-on-surface">${item.nombre}</p>
-                <span class="font-bold text-sm text-on-surface">$${item.precio.toLocaleString('es-AR')}</span>
-                <button class="absolute -right-2 -top-2 bg-error text-on-error w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm btn-borrar-item" data-index="${index}">
-                    <span class="material-symbols-outlined text-[14px]">close</span>
-                </button>
-            </div>`;
-        });
+        movimientos.forEach(m => {
+            const montoFloat = parseFloat(m.monto || 0);
+            const esIngresoEfectivo = (m.tipo === 'INGRESO');
+            const esIngresoDigital = (m.tipo === 'INGRESO_MP');
+            const esEgreso = (m.tipo === 'EGRESO' || m.tipo === 'RETIRO');
 
-        if(labelTotal) labelTotal.textContent = '$' + total.toLocaleString('es-AR');
+            if (esIngresoEfectivo) totalEfectivoIngresos += montoFloat;
+            if (esIngresoDigital) totalDigitales += montoFloat;
+            if (esEgreso) totalEgresosYRetiros += montoFloat;
 
-        document.querySelectorAll('.btn-borrar-item').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                ticketCarrito.splice(e.currentTarget.dataset.index, 1);
-                renderizarTicket();
-            });
-        });
-    }
+            let badgeHTML = '';
+            let colorMonto = 'text-primary';
+            let signo = '+$';
 
-    // Botones Venta Rápida del panel derecho
-    document.querySelectorAll('.btn-venta-rapida').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const cur = e.currentTarget;
-            ticketCarrito.push({ id: cur.dataset.id, nombre: cur.dataset.nombre, precio: parseFloat(cur.dataset.precio), tipo: 'PRODUCTO' });
-            renderizarTicket();
-        });
-    });
-
-    // Cobrar Ticket
-    if (btnCobrar) {
-        btnCobrar.addEventListener('click', () => {
-            if (ticketCarrito.length === 0) { alert("El ticket está vacío."); return; }
-            let totalCobrado = 0;
-            ticketCarrito.forEach(item => {
-                totalCobrado += item.precio;
-                if (item.tipo === 'PRODUCTO' && window.Almacenamiento.descontarStockLocal) {
-                    window.Almacenamiento.descontarStockLocal(item.id, 1);
-                }
-            });
-
-            const u = window.Almacenamiento.obtenerUsuarioLogueado();
-            window.Almacenamiento.registrarMovimientoCaja({
-                usuario_id: u ? u.id : 1,
-                usuario_nombre: u ? u.nombre : 'Empleado',
-                tipo: 'INGRESO',
-                concepto: `Cobro Ticket #${numeroTicket} (${ticketCarrito.length} items)`,
-                monto: totalCobrado
-            });
-
-            alert(`✅ Ticket cobrado con éxito. Total: $${totalCobrado}`);
-            ticketCarrito = [];
-            numeroTicket++;
-            if(document.getElementById('ticket-id')) document.getElementById('ticket-id').textContent = `Ticket #${numeroTicket}`;
-            renderizarTicket();
-        });
-    }
-
-    // --- CALENDARIO GRILLA ---
-    const horaInicio = 8; const horaFin = 23; const pxPorHora = 80;
-    let turnoActivoParaOpciones = null; // Variable global para el turno clickeado
-
-    function renderizarGrillaBase() {
-        const columnaHoras = document.getElementById('columna-horas');
-        const grillaCanchas = document.getElementById('grilla-canchas');
-        const colContainer = document.getElementById('columnas-canchas');
-        if(!columnaHoras || !grillaCanchas || !colContainer) return;
-        
-        columnaHoras.innerHTML = '';
-        Array.from(grillaCanchas.children).forEach(c => { if (c.id !== 'columnas-canchas') c.remove(); });
-
-        for (let i = horaInicio; i <= horaFin; i++) {
-            const hDiv = document.createElement('div');
-            hDiv.className = 'h-20 text-xs text-on-surface-variant/60 font-label text-right pr-2 pt-2';
-            hDiv.textContent = `${i.toString().padStart(2, '0')}:00`;
-            columnaHoras.appendChild(hDiv);
-
-            const linea = document.createElement('div');
-            linea.className = 'absolute w-full h-[80px] border-t border-outline-variant/15';
-            linea.style.top = `${(i - horaInicio) * pxPorHora}px`;
-            grillaCanchas.appendChild(linea);
-        }
-
-        colContainer.innerHTML = '';
-        for (let c = 1; c <= 3; c++) {
-            const col = document.createElement('div');
-            col.className = `flex-1 relative border-r border-outline-variant/10 columna-cancha cursor-pointer hover:bg-surface-container-lowest/40 transition-colors`;
-            col.dataset.cancha = c;
-            
-            // Clic en el fondo vacío para agregar turno
-            col.addEventListener('click', (e) => {
-                if(e.target === col) {
-                    const y = e.clientY - col.getBoundingClientRect().top;
-                    const horaClic = horaInicio + Math.floor(y / pxPorHora);
-                    abrirModalAgenda(c, `${horaClic.toString().padStart(2, '0')}:00`);
-                }
-            });
-            colContainer.appendChild(col);
-        }
-    }
-
-    function cargarTurnosGrilla() {
-        if (!window.Almacenamiento || !window.Almacenamiento.obtenerTurnos) return;
-        
-        const todosLosTurnos = window.Almacenamiento.obtenerTurnos();
-        const columnas = document.querySelectorAll('.columna-cancha');
-        columnas.forEach(col => col.innerHTML = '');
-
-        todosLosTurnos.forEach(t => {
-            const [h, m] = t.horaInicio.split(':').map(Number);
-            const topPx = (((h - horaInicio) * 60 + m) / 60) * pxPorHora;
-            const altoPx = (t.duracion / 60) * pxPorHora;
-
-            const col = columnas[t.canchaId - 1];
-            if (!col) return;
-
-            let badgeHTML, bgClass, borderClass, textClass, leftBarClass;
-            if (t.estadoPago === 'PAGADO') {
-                bgClass = 'bg-[#e8f5e9]/90 hover:bg-[#c8e6c9]'; borderClass = 'border-[#4caf50]/40'; textClass = 'text-[#2e7d32]'; leftBarClass = 'bg-[#4caf50]';
-                badgeHTML = `<span class="inline-block mt-1 ml-2 px-1.5 py-0.5 bg-[#4caf50]/20 text-[#2e7d32] text-[9px] font-bold rounded uppercase">TOTAL PAGADO</span>`;
-            } else if (t.estadoPago === 'SENA') {
-                bgClass = 'bg-[#e3f2fd]/90 hover:bg-[#bbdefb]'; borderClass = 'border-[#2196f3]/40'; textClass = 'text-[#1565c0]'; leftBarClass = 'bg-[#2196f3]';
-                badgeHTML = `<span class="inline-block mt-1 ml-2 px-1.5 py-0.5 bg-[#2196f3]/20 text-[#1565c0] text-[9px] font-bold rounded uppercase">SEÑA PAGADA</span>`;
+            if (esIngresoEfectivo) {
+                badgeHTML = `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-[#e8f5e9] text-[#2e7d32]">EFECTIVO</span>`;
+                colorMonto = 'text-[#2e7d32]';
+                signo = '+$';
+            } else if (esIngresoDigital) {
+                badgeHTML = `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-[#e3f2fd] text-[#1565c0]">DIGITAL</span>`;
+                colorMonto = 'text-[#1565c0]';
+                signo = '+$';
+            } else if (m.tipo === 'RETIRO') {
+                badgeHTML = `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-[#ffebee] text-[#c62828]">RETIRO</span>`;
+                colorMonto = 'text-[#c62828]';
+                signo = '-$';
             } else {
-                bgClass = 'bg-[#fff3e0]/90 hover:bg-[#ffe0b2]'; borderClass = 'border-[#ffb74d]/40'; textClass = 'text-[#e65100]'; leftBarClass = 'bg-[#ff9800]';
-                badgeHTML = `<span class="inline-block mt-1 ml-2 px-1.5 py-0.5 bg-[#ffb74d]/20 text-[#e65100] text-[9px] font-bold rounded uppercase">NO PAGO</span>`;
+                badgeHTML = `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-[#fff3e0] text-[#e65100]">EGRESO</span>`;
+                colorMonto = 'text-[#e65100]';
+                signo = '-$';
             }
 
-            const block = document.createElement('div');
-            block.className = `absolute w-[95%] left-[2.5%] ${bgClass} rounded-xl p-2 transition-all cursor-pointer border ${borderClass} shadow-sm z-20 overflow-hidden hover:scale-[1.02] hover:shadow-md`;
-            block.style.top = `${topPx}px`; block.style.height = `${altoPx}px`;
+            let fechaStr = "Hoy";
+            if (m.fecha_hora) {
+                const d = new Date(m.fecha_hora.replace(' ', 'T'));
+                fechaStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' hs';
+            }
 
-            const fechaStr = t.fecha ? t.fecha.split('-').reverse().join('/') : 'Hoy';
-            block.innerHTML = `
-                <div class="w-1.5 h-full absolute left-0 top-0 ${leftBarClass} rounded-l-xl"></div>
-                <h4 class="font-headline font-bold text-sm ${textClass} ml-2 truncate">${t.clienteNombre}</h4>
-                <p class="text-[10px] text-on-surface-variant font-label ml-2">${fechaStr} • ${t.horaInicio} (${t.duracion}m)</p>
-                ${badgeHTML}
-            `;
-
-            // Al hacer clic, abrimos el NUEVO Modal de Opciones
-            block.addEventListener('click', (e) => {
-                e.stopPropagation(); 
-                turnoActivoParaOpciones = t;
-                document.getElementById('opciones-turno-titulo').textContent = `Turno de ${t.clienteNombre}`;
-                document.getElementById('modal-opciones-turno').showModal();
-            });
-
-            col.appendChild(block);
+            if (contenedorHistorial) {
+                contenedorHistorial.innerHTML += `
+                <div class="flex items-center justify-between p-3 rounded-xl hover:bg-surface-container-low transition-colors border-b border-outline-variant/10 last:border-none">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center font-bold text-xs text-on-surface">
+                            ${(m.usuario_nombre || 'E').substring(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                            <p class="font-bold text-sm text-on-surface leading-tight">${m.concepto}</p>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span class="text-xs text-on-surface-variant">${fechaStr}</span>
+                                <span>•</span>
+                                <span class="text-xs text-on-surface-variant font-medium">${m.usuario_nombre || 'Empleado'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right flex flex-col items-end gap-1">
+                        <span class="font-headline font-bold text-base ${colorMonto}">${signo}${montoFloat.toLocaleString('es-AR')}</span>
+                        ${badgeHTML}
+                    </div>
+                </div>`;
+            }
         });
+
+        // Balance de efectivo real en caja
+        const efectivoEnCaja = Math.max(0, totalEfectivoIngresos - totalEgresosYRetiros);
+        const totalRecaudado = totalEfectivoIngresos + totalDigitales;
+
+        if (kpiEfectivo) kpiEfectivo.textContent = `$ ${efectivoEnCaja.toLocaleString('es-AR')}`;
+        if (kpiDigitales) kpiDigitales.textContent = `$ ${totalDigitales.toLocaleString('es-AR')}`;
+        if (kpiTotal) kpiTotal.textContent = `$ ${totalRecaudado.toLocaleString('es-AR')}`;
     }
 
-    // --- LOGICA DEL NUEVO MODAL INTERACTIVO DE TURNOS ---
-    const modalOpciones = document.getElementById('modal-opciones-turno');
-    
-    if (modalOpciones) {
-        document.getElementById('btn-cerrar-opciones').onclick = () => modalOpciones.close();
+    // 5. Registrar movimiento en la API
+    if (btnRegistrar) {
+        btnRegistrar.addEventListener('click', async () => {
+            const tipo = selectTipo ? selectTipo.value : 'INGRESO';
+            const monto = parseFloat(inputMonto.value);
+            const concepto = inputConcepto.value.trim();
 
-        document.getElementById('btn-eliminar-turno-modal').onclick = () => {
-            if(confirm("¿Seguro que deseas borrar este turno de forma definitiva?")) {
-                window.Almacenamiento.eliminarTurnoLocal(turnoActivoParaOpciones.id);
-                modalOpciones.close();
-                cargarTurnosGrilla();
+            if (isNaN(monto) || monto <= 0) {
+                alert("Por favor, ingresá un monto válido mayor a 0.");
+                return;
             }
-        };
+            if (!concepto) {
+                alert("Por favor, ingresá un concepto o descripción para el movimiento.");
+                return;
+            }
 
-        // Cambiar Estado
-        document.querySelectorAll('.btn-cambiar-estado-turno').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                turnoActivoParaOpciones.estadoPago = e.currentTarget.dataset.estado;
-                window.Almacenamiento.actualizarTurnoLocal(turnoActivoParaOpciones);
-                modalOpciones.close();
-                cargarTurnosGrilla();
-            });
-        });
+            // Obtener ID del usuario logueado
+            let usuarioId = 1;
+            if (window.Almacenamiento && window.Almacenamiento.obtenerUsuarioLogueado) {
+                const u = window.Almacenamiento.obtenerUsuarioLogueado();
+                if (u && u.id) usuarioId = u.id;
+            }
 
-        // Enviar ítems al Ticket desde el menú del turno
-        document.querySelectorAll('.btn-opcion-rapida-turno').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const cur = e.currentTarget;
-                if(cur.dataset.tipo === 'cancha') {
-                    // Calculo de costo ilustrativo de cancha
-                    const precioCancha = (turnoActivoParaOpciones.duracion / 60) * 8500;
-                    ticketCarrito.push({
-                        id: `cancha-${turnoActivoParaOpciones.canchaId}`,
-                        nombre: `Cancha ${turnoActivoParaOpciones.canchaId} (${turnoActivoParaOpciones.duracion}m)`,
-                        precio: precioCancha,
-                        tipo: 'TURNO'
-                    });
+            btnRegistrar.disabled = true;
+            btnRegistrar.textContent = "Registrando...";
+
+            try {
+                const res = await fetch('../api/caja.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        usuario_id: usuarioId,
+                        tipo: tipo,
+                        concepto: concepto,
+                        monto: monto
+                    })
+                });
+
+                if (res.ok) {
+                    // Si se vendió un producto del select, descontar stock en MySQL
+                    const prodId = selectProducto ? selectProducto.value : null;
+                    if (prodId) {
+                        const prod = catalogoProductos.find(p => p.id == prodId);
+                        if (prod) {
+                            const stockActual = parseInt(prod.stock_actual ?? prod.stockActual ?? 0);
+                            const nuevoStock = Math.max(0, stockActual - 1);
+                            await fetch('../api/stock.php', {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ id: prod.id, stock_actual: nuevoStock })
+                            });
+                        }
+                    }
+
+                    // Limpiar formulario
+                    inputMonto.value = '';
+                    inputConcepto.value = '';
+                    if (selectProducto) selectProducto.value = '';
+
+                    // Recargar datos
+                    await cargarMovimientos();
+                    await cargarCatalogoProductos();
                 } else {
-                    ticketCarrito.push({
-                        id: cur.dataset.id,
-                        nombre: cur.dataset.nombre,
-                        precio: parseFloat(cur.dataset.precio),
-                        tipo: 'PRODUCTO'
-                    });
+                    const err = await res.json();
+                    alert(err.error || "Error al registrar movimiento.");
                 }
-                
-                renderizarTicket();
-                // Animamos un poco el botón para dar feedback de que se sumó, pero no cerramos el modal
-                // así podés agregar "Cancha" + "Agua" de un solo tirón.
-            });
+            } catch (e) {
+                console.error("Error al registrar en caja:", e);
+                alert("Error de conexión al registrar movimiento en caja.");
+            } finally {
+                btnRegistrar.disabled = false;
+                btnRegistrar.textContent = "Registrar en Caja";
+            }
         });
     }
 
-    // --- MODAL CREAR AGENDA ---
-    const modalAgenda = document.getElementById('modal-agenda');
-    const formAgenda = document.getElementById('form-agenda');
-    
-    const btnAbrirModalTop = document.getElementById('btn-abrir-modal-turno');
-    if(btnAbrirModalTop) btnAbrirModalTop.addEventListener('click', () => abrirModalAgenda(1, "18:00"));
+    // 6. Modal de Cierre de Caja
+    if (btnAbrirCierre && modalCierre) {
+        btnAbrirCierre.addEventListener('click', () => {
+            let totalEfectivoIngresos = 0;
+            let totalDigitales = 0;
+            let totalEgresosYRetiros = 0;
 
-    function abrirModalAgenda(canchaId, horaStr) {
-        if(!modalAgenda) return;
-        document.getElementById('agenda-cancha-id').value = canchaId;
-        document.getElementById('agenda-hora').value = horaStr;
-        document.getElementById('agenda-fecha').value = new Date().toISOString().split('T')[0];
-        document.getElementById('agenda-cliente').value = '';
-        
-        const datalist = document.getElementById('lista-clientes-agenda');
-        if(datalist && window.Almacenamiento.obtenerUsuarios) {
-            datalist.innerHTML = '';
-            window.Almacenamiento.obtenerUsuarios().filter(u => u.rol === 'CLIENTE').forEach(u => {
-                datalist.innerHTML += `<option value="${u.nombre}">`;
+            movimientosActuales.forEach(m => {
+                const montoFloat = parseFloat(m.monto || 0);
+                if (m.tipo === 'INGRESO') totalEfectivoIngresos += montoFloat;
+                else if (m.tipo === 'INGRESO_MP') totalDigitales += montoFloat;
+                else totalEgresosYRetiros += montoFloat;
             });
-        }
-        modalAgenda.showModal();
+
+            const balance = Math.max(0, totalEfectivoIngresos - totalEgresosYRetiros);
+
+            if (txtCierreIngresos) txtCierreIngresos.textContent = `$${totalEfectivoIngresos.toLocaleString('es-AR')}`;
+            if (txtCierreDigitales) txtCierreDigitales.textContent = `$${totalDigitales.toLocaleString('es-AR')}`;
+            if (txtCierreEgresos) txtCierreEgresos.textContent = `$${totalEgresosYRetiros.toLocaleString('es-AR')}`;
+            if (txtCierreBalance) txtCierreBalance.textContent = `$${balance.toLocaleString('es-AR')}`;
+
+            modalCierre.showModal();
+        });
     }
 
-    if(document.getElementById('btn-cancelar-agenda')) document.getElementById('btn-cancelar-agenda').onclick = () => modalAgenda.close();
+    if (btnCancelarCierre && modalCierre) {
+        btnCancelarCierre.addEventListener('click', () => modalCierre.close());
+    }
 
-    if(formAgenda) {
-        const btnSubmit = formAgenda.querySelector('button[type="submit"]');
-        if (btnSubmit) {
-            btnSubmit.type = 'button'; 
-            btnSubmit.addEventListener('click', () => {
-                const clienteNombre = document.getElementById('agenda-cliente').value.trim();
-                const horaForm = document.getElementById('agenda-hora').value;
-                
-                if (!clienteNombre) {
-                    alert("⚠️ Por favor, ingresá el nombre del cliente o socio en el cuadro de texto.");
-                    return;
-                }
+    if (btnConfirmarCierre && modalCierre) {
+        btnConfirmarCierre.addEventListener('click', async () => {
+            let usuarioId = 1;
+            if (window.Almacenamiento && window.Almacenamiento.obtenerUsuarioLogueado) {
+                const u = window.Almacenamiento.obtenerUsuarioLogueado();
+                if (u && u.id) usuarioId = u.id;
+            }
 
-                const nuevoTurno = {
-                    canchaId: parseInt(document.getElementById('agenda-cancha-id').value),
-                    fecha: document.getElementById('agenda-fecha').value,
-                    horaInicio: horaForm,
-                    duracion: parseInt(document.getElementById('agenda-duracion').value),
-                    clienteNombre: clienteNombre,
-                    estadoPago: document.getElementById('agenda-pago').value,
-                    estado: 'CONFIRMADO'
-                };
+            try {
+                await fetch('../api/caja.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        usuario_id: usuarioId,
+                        tipo: 'RETIRO',
+                        concepto: 'Cierre de Jornada y Retiro de Efectivo',
+                        monto: parseFloat(txtCierreBalance.textContent.replace('$', '').replace(/\./g, '')) || 0
+                    })
+                });
+            } catch (e) {
+                console.warn("Error registrando retiro de cierre:", e);
+            }
 
-                if (window.Almacenamiento && window.Almacenamiento.registrarTurno) {
-                    window.Almacenamiento.registrarTurno(nuevoTurno);
-                    formAgenda.reset();
-                    modalAgenda.close();
-                    cargarTurnosGrilla();
-                    
-                    const [h, m] = horaForm.split(':').map(Number);
-                    const topPx = (((h - horaInicio) * 60 + m) / 60) * pxPorHora;
-                    const scrollContainer = document.getElementById('calendario-scroll');
-                    if (scrollContainer) scrollContainer.scrollTo({ top: topPx - 100, behavior: 'smooth' });
-                }
-            });
-        }
+            modalCierre.close();
+            alert("✅ Jornada finalizada con éxito. Arqueo de caja completado.");
+            await cargarMovimientos();
+        });
     }
 
     // Inicializar
-    renderizarGrillaBase();
-    cargarTurnosGrilla();
-    renderizarTicket();
+    cargarCatalogoProductos();
+    cargarMovimientos();
 })();
