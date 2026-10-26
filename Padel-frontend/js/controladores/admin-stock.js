@@ -9,8 +9,8 @@
     const modalTitulo = document.getElementById('modal-titulo');
 
     // Filtros de búsqueda
-    const inputBusqueda = document.querySelector('input[placeholder*="Buscar producto"]');
-    const selectCategoria = document.querySelector('select:has(option:contains("Todas las categorías"))') || document.querySelector('.bg-surface-container-low select');
+    const inputBusqueda = document.getElementById('input-busqueda-stock') || document.querySelector('input[placeholder*="Buscar producto"]');
+    const selectCategoria = document.getElementById('select-categoria-stock') || document.querySelector('.bg-surface-container-low select');
 
     let productosActuales = [];
     if (!tableBody) return;
