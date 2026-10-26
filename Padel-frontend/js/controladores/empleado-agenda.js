@@ -86,8 +86,8 @@
                     <span class="text-[10px] text-secondary font-medium uppercase">${item.tipo}</span>
                 </div>
                 <span class="font-bold text-sm text-on-surface">$${parseFloat(item.precio).toLocaleString('es-AR')}</span>
-                <button class="absolute -right-2 -top-2 bg-error text-on-error w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm btn-borrar-item" data-index="${index}">
-                    <span class="material-symbols-outlined text-[14px]">close</span>
+                <button class="absolute -right-2 -top-2 bg-error text-on-error w-7 h-7 rounded-full flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity shadow-md btn-borrar-item cursor-pointer" data-index="${index}" title="Quitar del ticket">
+                    <span class="material-symbols-outlined text-[15px]">close</span>
                 </button>
             </div>`;
         });
@@ -206,7 +206,7 @@
     if (btnCobrar) {
         btnCobrar.addEventListener('click', async () => {
             if (ticketCarrito.length === 0) {
-                alert("El ticket está vacío.");
+                if (window.mostrarNotificacion) window.mostrarNotificacion("El ticket está vacío.", "error");
                 return;
             }
 
@@ -277,7 +277,9 @@
                     })
                 });
 
-                alert(`✅ Ticket #${numeroTicket} cobrado con éxito.\nTotal ingresado a Caja: $${totalCobrado.toLocaleString('es-AR')}`);
+                if (window.mostrarNotificacion) {
+                    window.mostrarNotificacion(`Ticket #${numeroTicket} cobrado. Ingreso registrado: $${totalCobrado.toLocaleString('es-AR')}`);
+                }
 
                 ticketCarrito = [];
                 numeroTicket++;
@@ -289,7 +291,7 @@
 
             } catch (error) {
                 console.error("Error al cobrar ticket:", error);
-                alert("Error al procesar el cobro en el servidor.");
+                if (window.mostrarNotificacion) window.mostrarNotificacion("Error al procesar el cobro en el servidor.", "error");
             } finally {
                 btnCobrar.disabled = false;
                 btnCobrar.textContent = "Cobrar e Imprimir Ticket";
@@ -613,17 +615,18 @@
                         fechaActiva = fechaForm;
                         await cargarTurnosGrilla();
                         
+                        if (window.mostrarNotificacion) window.mostrarNotificacion("Turno agendado exitosamente.");
                         const [h, m] = horaForm.split(':').map(Number);
                         const topPx = (((h - horaInicio) * 60 + m) / 60) * pxPorHora;
                         const scrollContainer = document.getElementById('calendario-scroll');
                         if (scrollContainer) scrollContainer.scrollTo({ top: topPx - 100, behavior: 'smooth' });
                     } else {
                         const err = await res.json();
-                        alert(err.error || "No se pudo registrar el turno.");
+                        if (window.mostrarNotificacion) window.mostrarNotificacion(err.error || "No se pudo registrar el turno.", "error");
                     }
                 } catch (e) {
                     console.error("Error al registrar turno:", e);
-                    alert("Error de conexión al guardar turno en el servidor.");
+                    if (window.mostrarNotificacion) window.mostrarNotificacion("Error de conexión al guardar turno en el servidor.", "error");
                 } finally {
                     btnSubmit.disabled = false;
                     btnSubmit.textContent = "Confirmar Turno";
@@ -632,9 +635,19 @@
         }
     }
 
+    function scrollAHoraActual() {
+        const scrollContainer = document.getElementById('calendario-scroll');
+        if (!scrollContainer) return;
+        const horaActual = new Date().getHours();
+        // Centrar en la hora actual
+        const topPx = Math.max(0, (horaActual - horaInicio - 1) * pxPorHora);
+        scrollContainer.scrollTo({ top: topPx, behavior: 'smooth' });
+    }
+
     // Inicializar
     renderizarGrillaBase();
     cargarTurnosGrilla();
     renderizarTicket();
     cargarProductosVentaRapida();
+    setTimeout(scrollAHoraActual, 150);
 })();

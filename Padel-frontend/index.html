@@ -106,24 +106,34 @@
                     <h2 id="topbar-title" class="font-headline text-xl font-bold text-on-surface">Panel de Control</h2>
                 </div>
                 <div class="flex items-center gap-2 md:gap-4">
-                    <button onclick="window.alternarModoOscuro()" class="p-2 text-secondary hover:bg-surface-container-low transition-colors rounded-full flex items-center justify-center" title="Alternar Modo Oscuro / Claro">
+                    <button onclick="window.alternarModoOscuro()" class="p-2 text-secondary hover:bg-surface-container-low transition-colors rounded-full flex items-center justify-center cursor-pointer" title="Alternar Modo Oscuro / Claro">
                         <span class="material-symbols-outlined dark:hidden text-[20px]">dark_mode</span>
                         <span class="material-symbols-outlined hidden dark:block text-[20px]">light_mode</span>
                     </button>
-                    <button class="p-2 text-secondary hover:bg-surface-container-low transition-colors rounded-full flex items-center justify-center" title="Notificaciones">
-                        <span class="material-symbols-outlined text-[20px]">notifications</span>
-                    </button>
+                    
+                    <!-- Campanita de Notificaciones interactiva -->
+                    <div class="relative">
+                        <button id="btn-notificaciones" class="relative p-2 text-secondary hover:bg-surface-container-low transition-colors rounded-full flex items-center justify-center cursor-pointer" title="Notificaciones">
+                            <span class="material-symbols-outlined text-[20px]">notifications</span>
+                            <span id="badge-notificaciones" class="hidden absolute top-1 right-1 w-2.5 h-2.5 bg-error rounded-full ring-2 ring-surface"></span>
+                        </button>
+                        
+                        <!-- Panel Dropdown de Notificaciones -->
+                        <div id="panel-notificaciones-dropdown" class="hidden absolute right-0 mt-3 w-80 sm:w-96 bg-surface-container-lowest rounded-2xl shadow-2xl border border-outline-variant/20 z-50 flex-col overflow-hidden transition-all duration-200">
+                            <!-- Inyectado dinámicamente por notificaciones.js -->
+                        </div>
+                    </div>
+
                     <div class="h-8 w-px bg-outline-variant/30 mx-1 md:mx-2"></div>
-                    <button class="flex items-center gap-3 hover:bg-surface-container-low p-2 pr-4 rounded-full transition-colors">
-                        <div class="h-8 w-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-sm" id="topbar-profile-initials">--</div>
+                    
+                    <!-- Píldora de Perfil del Usuario -->
+                    <div class="flex items-center gap-3 bg-surface-container-low/70 hover:bg-surface-container-low px-3 py-1.5 rounded-full transition-colors border border-outline-variant/10">
+                        <div class="h-8 w-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-sm shadow-sm" id="topbar-profile-initials">--</div>
                         <div class="text-left hidden md:block">
                             <p class="text-sm font-semibold text-on-surface font-headline leading-tight" id="topbar-profile-name">Usuario</p>
-                            <p class="text-xs text-secondary leading-tight" id="topbar-profile-role">Rol</p>
+                            <p class="text-[11px] text-secondary font-medium leading-tight" id="topbar-profile-role">Rol</p>
                         </div>
-                    </button>
-                    <button class="btn-cerrar-sesion flex items-center justify-center p-2 text-error hover:bg-error-container/20 transition-colors rounded-full ml-2" title="Cerrar Sesión">
-                        <span class="material-symbols-outlined">logout</span>
-                    </button>
+                    </div>
                 </div>
             </header>
 

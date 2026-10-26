@@ -197,11 +197,11 @@
             const concepto = inputConcepto.value.trim();
 
             if (isNaN(monto) || monto <= 0) {
-                alert("Por favor, ingresá un monto válido mayor a 0.");
+                if (window.mostrarNotificacion) window.mostrarNotificacion("Por favor, ingresá un monto válido mayor a 0.", "error");
                 return;
             }
             if (!concepto) {
-                alert("Por favor, ingresá un concepto o descripción para el movimiento.");
+                if (window.mostrarNotificacion) window.mostrarNotificacion("Por favor, ingresá un concepto o descripción para el movimiento.", "error");
                 return;
             }
 
@@ -248,16 +248,18 @@
                     inputConcepto.value = '';
                     if (selectProducto) selectProducto.value = '';
 
+                    if (window.mostrarNotificacion) window.mostrarNotificacion("Movimiento registrado en caja exitosamente.");
+
                     // Recargar datos
                     await cargarMovimientos();
                     await cargarCatalogoProductos();
                 } else {
                     const err = await res.json();
-                    alert(err.error || "Error al registrar movimiento.");
+                    if (window.mostrarNotificacion) window.mostrarNotificacion(err.error || "Error al registrar movimiento.", "error");
                 }
             } catch (e) {
                 console.error("Error al registrar en caja:", e);
-                alert("Error de conexión al registrar movimiento en caja.");
+                if (window.mostrarNotificacion) window.mostrarNotificacion("Error de conexión al registrar movimiento en caja.", "error");
             } finally {
                 btnRegistrar.disabled = false;
                 btnRegistrar.textContent = "Registrar en Caja";
@@ -318,7 +320,7 @@
             }
 
             modalCierre.close();
-            alert("✅ Jornada finalizada con éxito. Arqueo de caja completado.");
+            if (window.mostrarNotificacion) window.mostrarNotificacion("Jornada finalizada con éxito. Arqueo de caja completado.");
             await cargarMovimientos();
         });
     }

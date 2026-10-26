@@ -106,21 +106,36 @@
 
         if (btnDelete) {
             const id = btnDelete.dataset.id;
-            const nombre = btnDelete.dataset.nombre;
-            if (confirm(`¿Estás seguro de eliminar físicamente al usuario ${nombre}? Esta acción no se puede deshacer.`)) {
+            const nombre = btnDelete.dataset.nombre || 'este usuario';
+            if (confirm(`¿Estás seguro de eliminar a ${nombre}?`)) {
                 try {
                     const response = await fetch(`../api/usuarios.php?id=${id}`, {
                         method: 'DELETE'
                     });
                     if (response.ok) {
+                        if (window.mostrarNotificacion) window.mostrarNotificacion(`Usuario ${nombre} eliminado del sistema.`);
                         cargarUsuarios();
                     } else {
                         const data = await response.json();
-                        alert(data.error || 'Error al eliminar');
+                        // Si falla por llaves foráneas (reservas o pagos existentes):
+                        const desactiva = confirm(`⚠️ ${data.error || 'El usuario posee historial.'}\n\nPara no perder los libros contables y auditoría del club: ¿Deseas DESACTIVAR / BLOQUEAR su acceso en su lugar?`);
+                        if (desactiva) {
+                            const resBloqueo = await fetch('../api/usuarios.php', {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ id: id, estado: 'BLOQUEADO' })
+                            });
+                            if (resBloqueo.ok) {
+                                if (window.mostrarNotificacion) window.mostrarNotificacion(`Usuario ${nombre} bloqueado exitosamente.`);
+                                cargarUsuarios();
+                            } else {
+                                if (window.mostrarNotificacion) window.mostrarNotificacion("No se pudo cambiar el estado.", "error");
+                            }
+                        }
                     }
                 } catch (error) {
-                    console.error('Error:', error);
-                    alert('Error de conexión.');
+                    console.error('Error al procesar baja:', error);
+                    if (window.mostrarNotificacion) window.mostrarNotificacion('Error de conexión al servidor.', 'error');
                 }
             }
         }
@@ -128,7 +143,6 @@
         if (btnToggleStatus) {
             const id = btnToggleStatus.dataset.id;
             const estadoActual = btnToggleStatus.dataset.estado;
-            // Alternar estado simple entre ACTIVO y BLOQUEADO para simplificar (o CON_DEUDA si es necesario)
             const nuevoEstado = estadoActual === 'ACTIVO' ? 'BLOQUEADO' : 'ACTIVO';
             
             try {
@@ -138,14 +152,17 @@
                     body: JSON.stringify({ id: id, estado: nuevoEstado })
                 });
                 if (response.ok) {
+                    if (window.mostrarNotificacion) {
+                        window.mostrarNotificacion(`Usuario ${nuevoEstado === 'ACTIVO' ? 'activado' : 'bloqueado'} con éxito.`);
+                    }
                     cargarUsuarios();
                 } else {
                     const data = await response.json();
-                    alert(data.error || 'Error al cambiar estado');
+                    if (window.mostrarNotificacion) window.mostrarNotificacion(data.error || 'Error al cambiar estado.', 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error de conexión.');
+                if (window.mostrarNotificacion) window.mostrarNotificacion('Error de conexión.', 'error');
             }
         }
     });
@@ -154,10 +171,11 @@
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        const btnSubmit = form.querySelector('button[type="submit"]');
         const id = document.getElementById('usuario-id').value;
-        const nombre = document.getElementById('usuario-nombre').value;
-        const correo = document.getElementById('usuario-correo').value;
-        const telefono = document.getElementById('usuario-telefono').value;
+        const nombre = document.getElementById('usuario-nombre').value.trim();
+        const correo = document.getElementById('usuario-correo').value.trim();
+        const telefono = document.getElementById('usuario-telefono').value.trim();
         const rol = document.getElementById('usuario-rol').value;
         const contrasena = document.getElementById('usuario-contrasena').value;
 
@@ -169,10 +187,15 @@
         if (id) {
             payload.id = id;
             if (contrasena.trim() !== '') {
-                payload.contrasena = contrasena; // Solo actualizar si escribió algo
+                payload.contrasena = contrasena;
             }
         } else {
-            payload.contrasena = contrasena; // Obligatoria en creación
+            payload.contrasena = contrasena;
+        }
+
+        if (btnSubmit) {
+            btnSubmit.disabled = true;
+            btnSubmit.textContent = "Guardando...";
         }
 
         try {
@@ -184,14 +207,24 @@
 
             if (response.ok) {
                 cerrarModal();
+                if (window.mostrarNotificacion) {
+                    window.mostrarNotificacion(id ? `Usuario ${nombre} actualizado.` : `Usuario ${nombre} creado con éxito.`);
+                }
                 cargarUsuarios();
             } else {
                 const data = await response.json();
-                alert(data.error || 'Error al guardar');
+                if (window.mostrarNotificacion) {
+                    window.mostrarNotificacion(data.error || 'Error al guardar usuario.', 'error');
+                }
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Error de conexión al servidor');
+            if (window.mostrarNotificacion) window.mostrarNotificacion('Error de conexión al servidor.', 'error');
+        } finally {
+            if (btnSubmit) {
+                btnSubmit.disabled = false;
+                btnSubmit.textContent = "Guardar";
+            }
         }
     });
 

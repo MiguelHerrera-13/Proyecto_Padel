@@ -64,6 +64,7 @@
     if (form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const btnSubmit = document.getElementById('btn-guardar-producto');
             const id = document.getElementById('producto-id').value;
             
             const payload = {
@@ -77,6 +78,11 @@
             const metodo = id ? 'PUT' : 'POST';
             if (id) payload.id = parseInt(id);
 
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.textContent = "Guardando...";
+            }
+
             try {
                 const res = await fetch('../api/stock.php', {
                     method: metodo,
@@ -86,22 +92,66 @@
 
                 if (res.ok) {
                     cerrarModal();
+                    if (window.mostrarNotificacion) {
+                        window.mostrarNotificacion(id ? `Producto ${payload.nombre} actualizado.` : `Producto ${payload.nombre} agregado al stock.`);
+                    }
                     await cargarProductos();
                 } else {
                     const data = await res.json();
-                    alert(data.error || "Error al guardar el producto.");
+                    if (window.mostrarNotificacion) {
+                        window.mostrarNotificacion(data.error || "Error al guardar el producto.", "error");
+                    }
                 }
             } catch (err) {
                 console.error("Error al guardar producto:", err);
-                alert("Error de conexión al servidor.");
+                if (window.mostrarNotificacion) window.mostrarNotificacion("Error de conexión al servidor.", "error");
+            } finally {
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.textContent = "Guardar Producto";
+                }
             }
         });
     }
 
-    // 5. Delegación de eventos para Editar y Eliminar
+    // 5. Delegación de eventos para Reabastecimiento Rápido, Editar y Eliminar
     tableBody.addEventListener('click', async (e) => {
         const btnEdit = e.target.closest('.btn-edit');
         const btnDelete = e.target.closest('.btn-delete');
+        const btnQuickAdd = e.target.closest('.btn-quick-add');
+
+        // Reabastecimiento Rápido (+ unidades)
+        if (btnQuickAdd) {
+            const id = btnQuickAdd.dataset.id;
+            const nombre = btnQuickAdd.dataset.nombre;
+            const stockActual = parseInt(btnQuickAdd.dataset.stock) || 0;
+            const ingreso = prompt(`Reabastecimiento de "${nombre}"\nStock actual: ${stockActual} unidades.\n\n¿Cuántas unidades deseas sumar?:`, "10");
+            
+            if (ingreso !== null) {
+                const sumar = parseInt(ingreso.trim());
+                if (!isNaN(sumar) && sumar > 0) {
+                    const nuevoTotal = stockActual + sumar;
+                    try {
+                        const res = await fetch('../api/stock.php', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: parseInt(id), stock_actual: nuevoTotal })
+                        });
+                        if (res.ok) {
+                            if (window.mostrarNotificacion) {
+                                window.mostrarNotificacion(`Stock actualizado: ${nombre} ahora tiene ${nuevoTotal} u.`);
+                            }
+                            await cargarProductos();
+                        } else {
+                            if (window.mostrarNotificacion) window.mostrarNotificacion("No se pudo actualizar el stock.", "error");
+                        }
+                    } catch (errStock) {
+                        if (window.mostrarNotificacion) window.mostrarNotificacion("Error de conexión con el servidor.", "error");
+                    }
+                }
+            }
+            return;
+        }
 
         if (btnEdit) {
             const id = btnEdit.dataset.id;
@@ -129,14 +179,15 @@
                         method: 'DELETE'
                     });
                     if (res.ok) {
+                        if (window.mostrarNotificacion) window.mostrarNotificacion(`Producto "${nombreProd}" eliminado.`);
                         await cargarProductos();
                     } else {
                         const err = await res.json();
-                        alert(err.error || "Error al eliminar el producto.");
+                        if (window.mostrarNotificacion) window.mostrarNotificacion(err.error || "Error al eliminar producto.", "error");
                     }
                 } catch (err) {
                     console.error("Error al eliminar producto:", err);
-                    alert("Error de conexión al servidor.");
+                    if (window.mostrarNotificacion) window.mostrarNotificacion("Error de conexión al servidor.", "error");
                 }
             }
         }
@@ -184,14 +235,19 @@
             row.innerHTML = `
                 <div class="col-span-1 text-sm font-mono text-on-surface-variant">${prod.codigo}</div>
                 <div class="col-span-3 text-sm font-bold text-on-surface">${prod.nombre}</div>
-                <div class="col-span-2"><span class="text-xs text-secondary bg-surface px-2 py-1 rounded-md">${prod.categoria}</span></div>
-                <div class="col-span-1 text-right text-sm font-bold">${stockNum} u.</div>
+                <div class="col-span-2"><span class="text-xs text-secondary bg-surface px-2.5 py-1 rounded-md font-medium">${prod.categoria}</span></div>
+                <div class="col-span-1 text-right text-sm font-bold flex items-center justify-end gap-1.5">
+                    <span>${stockNum} u.</span>
+                    <button class="btn-quick-add p-1 text-primary hover:bg-primary/15 rounded-lg transition-colors cursor-pointer" data-id="${prod.id}" data-nombre="${prod.nombre}" data-stock="${stockNum}" title="Sumar unidades al stock">
+                        <span class="material-symbols-outlined text-[16px]">add_circle</span>
+                    </button>
+                </div>
                 <div class="col-span-1 text-right text-sm text-on-surface-variant">-</div>
                 <div class="col-span-1 text-right text-sm font-bold text-on-surface">$${precioNum.toLocaleString('es-AR')}</div>
                 <div class="col-span-2 flex justify-center">${estadoHTML}</div>
-                <div class="col-span-1 flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button class="btn-edit text-on-surface-variant hover:text-primary transition-colors" data-id="${prod.id}" title="Editar"><span class="material-symbols-outlined text-[20px]">edit</span></button>
-                    <button class="btn-delete text-on-surface-variant hover:text-error transition-colors" data-id="${prod.id}" title="Eliminar"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+                <div class="col-span-1 flex justify-center gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                    <button class="btn-edit text-on-surface-variant hover:text-primary transition-colors p-1 rounded-lg hover:bg-surface-container cursor-pointer" data-id="${prod.id}" title="Editar Producto"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+                    <button class="btn-delete text-on-surface-variant hover:text-error transition-colors p-1 rounded-lg hover:bg-surface-container cursor-pointer" data-id="${prod.id}" title="Eliminar Producto"><span class="material-symbols-outlined text-[18px]">delete</span></button>
                 </div>`;
             tableBody.appendChild(row);
         });

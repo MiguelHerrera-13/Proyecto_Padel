@@ -56,7 +56,7 @@
             const telefono = document.getElementById('prov-telefono').value.trim();
 
             if (!empresa || !rubro) {
-                alert("Por favor completa los campos Empresa y Rubro.");
+                if (window.mostrarNotificacion) window.mostrarNotificacion("Por favor completa los campos Empresa y Rubro.", "error");
                 return;
             }
 
@@ -70,13 +70,14 @@
                 if (res.ok) {
                     modal.close();
                     form.reset();
+                    if (window.mostrarNotificacion) window.mostrarNotificacion(`Proveedor ${empresa} registrado.`);
                     await cargarTabla();
                 } else {
                     const err = await res.json();
-                    alert(err.error || "Error al registrar proveedor.");
+                    if (window.mostrarNotificacion) window.mostrarNotificacion(err.error || "Error al registrar proveedor.", "error");
                 }
             } catch (err) {
-                alert("Error de conexión al guardar proveedor.");
+                if (window.mostrarNotificacion) window.mostrarNotificacion("Error de conexión al guardar proveedor.", "error");
             }
         };
     }
@@ -91,12 +92,13 @@
                     try {
                         const res = await fetch(`../api/proveedores.php?id=${id}`, { method: 'DELETE' });
                         if (res.ok) {
+                            if (window.mostrarNotificacion) window.mostrarNotificacion(`Proveedor "${empresa}" eliminado.`);
                             await cargarTabla();
                         } else {
-                            alert("No se pudo eliminar el proveedor.");
+                            if (window.mostrarNotificacion) window.mostrarNotificacion("No se pudo eliminar el proveedor.", "error");
                         }
                     } catch (err) {
-                        alert("Error de conexión al eliminar.");
+                        if (window.mostrarNotificacion) window.mostrarNotificacion("Error de conexión al eliminar.", "error");
                     }
                 }
             }

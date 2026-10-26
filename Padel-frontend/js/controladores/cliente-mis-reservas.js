@@ -132,16 +132,22 @@
                 if (btnCancelar) {
                     btnCancelar.addEventListener('click', async () => {
                         if (confirm(`¿Estás seguro de cancelar tu reserva para el ${fechaFormateada} a las ${horaStr} hs?`)) {
+                            btnCancelar.disabled = true;
+                            btnCancelar.textContent = "Cancelando...";
                             try {
                                 const delRes = await fetch(`../api/turnos.php?id=${t.id}`, { method: 'DELETE' });
                                 if (delRes.ok) {
-                                    alert("Tu reserva fue cancelada exitosamente.");
+                                    if (window.mostrarNotificacion) window.mostrarNotificacion("Tu reserva fue cancelada exitosamente.");
                                     await cargarMisReservas();
                                 } else {
-                                    alert("No se pudo cancelar la reserva.");
+                                    if (window.mostrarNotificacion) window.mostrarNotificacion("No se pudo cancelar la reserva.", "error");
+                                    btnCancelar.disabled = false;
+                                    btnCancelar.textContent = "Cancelar Reserva";
                                 }
                             } catch (e) {
-                                alert("Error de conexión al cancelar reserva.");
+                                if (window.mostrarNotificacion) window.mostrarNotificacion("Error de conexión al cancelar reserva.", "error");
+                                btnCancelar.disabled = false;
+                                btnCancelar.textContent = "Cancelar Reserva";
                             }
                         }
                     });

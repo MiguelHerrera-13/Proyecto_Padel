@@ -112,11 +112,11 @@
                                     if (spanRecargo90) spanRecargo90.textContent = Math.round(nuevoCosto * 0.5).toLocaleString('es-AR');
                                     if (spanRecargo120) spanRecargo120.textContent = Math.round(nuevoCosto * 0.85).toLocaleString('es-AR');
                                 } else {
-                                    alert("Error al actualizar tarifa.");
+                                    if (window.mostrarNotificacion) window.mostrarNotificacion("Error al actualizar tarifa.", "error");
                                 }
                             } catch (err) {
                                 console.error("Error:", err);
-                                alert("Error de conexión al actualizar tarifa.");
+                                if (window.mostrarNotificacion) window.mostrarNotificacion("Error de conexión al actualizar tarifa.", "error");
                             }
                         }
                     };
@@ -133,7 +133,16 @@
         const contenido = article.querySelector('.space-y-4');
         const boton = article.querySelector('button');
         
+        let labelEstado = article.querySelector('.badge-estado-cancha');
+        if (!labelEstado) {
+            labelEstado = document.createElement('span');
+            labelEstado.className = 'badge-estado-cancha text-xs font-bold mr-3';
+            toggle.closest('label').parentElement.insertBefore(labelEstado, toggle.closest('label'));
+        }
+
         if (activa) {
+            labelEstado.textContent = 'Habilitada';
+            labelEstado.className = 'badge-estado-cancha text-xs font-bold text-primary mr-3';
             if (contenido) contenido.classList.remove('opacity-50', 'pointer-events-none', 'grayscale');
             if (boton) {
                 boton.textContent = 'Actualizar Tarifas';
@@ -141,6 +150,8 @@
                 boton.classList.add('text-primary');
             }
         } else {
+            labelEstado.textContent = 'En Mantenimiento';
+            labelEstado.className = 'badge-estado-cancha text-xs font-bold text-on-surface-variant/70 mr-3';
             if (contenido) contenido.classList.add('opacity-50', 'pointer-events-none', 'grayscale');
             if (boton) {
                 boton.textContent = 'En Mantenimiento';
