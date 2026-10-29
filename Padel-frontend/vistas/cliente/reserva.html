@@ -1,118 +1,156 @@
-<div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-10 items-start">
-    
-    <!-- COLUMNA IZQUIERDA: Formulario (66%) -->
-    <div class="w-full lg:w-2/3 space-y-10">
-        
-        <header class="mb-2">
-            <h2 class="text-3xl md:text-4xl font-extrabold font-headline text-on-surface tracking-tight mb-2">Reserva de cancha</h2>
-            <p class="text-on-surface-variant text-base">Elija su fecha, duración y horario preferido.</p>
-        </header>
+<div class="max-w-7xl mx-auto p-6 md:p-8 space-y-8">
+    <!-- Encabezado Formal -->
+    <header class="border-b border-outline-variant/20 pb-5 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+        <div>
+            <span class="text-xs font-bold uppercase tracking-widest text-primary block mb-1">Portal de Socios • Reserva Online</span>
+            <h1 class="text-3xl font-extrabold font-headline text-on-surface tracking-tight">Reservar Cancha de Pádel</h1>
+            <p class="text-on-surface-variant text-sm mt-1">Selecciona fecha, duración, tipo de pista y horario disponible en tiempo real.</p>
+        </div>
+        <div class="flex items-center gap-2 bg-surface-container-lowest px-4 py-2 rounded-xl border border-outline-variant/20 shadow-sm">
+            <span class="material-symbols-outlined text-primary text-[18px]">calendar_month</span>
+            <label for="cliente-input-fecha" class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Elegir Fecha:</label>
+            <input type="date" id="cliente-input-fecha" class="bg-transparent text-xs font-extrabold text-on-surface border-none focus:ring-0 p-0 cursor-pointer">
+        </div>
+    </header>
 
-        <!-- 1. Fechas -->
-        <div class="space-y-4">
-            <h3 class="text-sm font-bold text-on-surface-variant uppercase tracking-wider">Fecha</h3>
-            <div id="fechas-container" class="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
-                <!-- Se inyecta por JS -->
-            </div>
+    <div class="flex flex-col lg:flex-row gap-8 items-start">
+        <!-- COLUMNA IZQUIERDA: Configuración de Reserva (66%) -->
+        <div class="w-full lg:w-2/3 space-y-6">
+            <!-- 1. Selector de Fechas Rápido -->
+            <section class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/15 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-primary text-[16px]">event</span> 1. Próximos Días Disponibles
+                    </h3>
+                    <span class="text-[11px] font-semibold text-on-surface-variant">Solo fechas desde hoy en adelante</span>
+                </div>
+                <div id="fechas-container" class="grid grid-cols-4 sm:grid-cols-7 gap-2.5">
+                    <!-- Se inyecta por JS -->
+                </div>
+            </section>
+
+            <!-- 2. Duración y Tipo de Cancha -->
+            <section class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/15 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-3">
+                    <h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-primary text-[16px]">timer</span> 2. Duración del Turno
+                    </h3>
+                    <div class="grid grid-cols-3 gap-2.5" id="duracion-container">
+                        <button type="button" class="btn-duracion py-2.5 px-3 rounded-xl font-bold text-xs bg-surface-container-low border border-outline-variant/20 text-on-surface hover:bg-surface-container transition-all cursor-pointer" data-val="60">60 min</button>
+                        <button type="button" class="btn-duracion py-2.5 px-3 rounded-xl font-bold text-xs bg-primary text-on-primary shadow-sm transition-all cursor-pointer" data-val="90">90 min</button>
+                        <button type="button" class="btn-duracion py-2.5 px-3 rounded-xl font-bold text-xs bg-surface-container-low border border-outline-variant/20 text-on-surface hover:bg-surface-container transition-all cursor-pointer" data-val="120">120 min</button>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    <h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-primary text-[16px]">stadium</span> 3. Cancha Preferida
+                    </h3>
+                    <div class="grid grid-cols-3 gap-2.5" id="tipo-container">
+                        <button type="button" class="btn-tipo py-2.5 px-2 rounded-xl font-bold text-xs bg-primary text-on-primary shadow-sm transition-all cursor-pointer" data-val="Cancha 1 (Techada)" data-cancha="1">Cancha 1</button>
+                        <button type="button" class="btn-tipo py-2.5 px-2 rounded-xl font-bold text-xs bg-surface-container-low border border-outline-variant/20 text-on-surface hover:bg-surface-container transition-all cursor-pointer" data-val="Cancha 2 (Descubierta)" data-cancha="2">Cancha 2</button>
+                        <button type="button" class="btn-tipo py-2.5 px-2 rounded-xl font-bold text-xs bg-surface-container-low border border-outline-variant/20 text-on-surface hover:bg-surface-container transition-all cursor-pointer" data-val="Cancha 3 (Premium)" data-cancha="3">Cancha 3</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. Horarios Disponibles -->
+            <section class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/15 space-y-5">
+                <div class="flex items-center justify-between border-b border-outline-variant/15 pb-3">
+                    <h3 class="text-base font-bold font-headline text-on-surface flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary text-[20px]">schedule</span>
+                        Horarios para el <span id="txt-fecha-seleccionada" class="text-primary underline decoration-primary/40">Hoy</span>
+                    </h3>
+                    <span class="text-xs text-on-surface-variant font-medium">Toque un horario libre</span>
+                </div>
+                
+                <!-- Mañana -->
+                <div class="space-y-2.5">
+                    <p class="text-xs font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[16px] text-amber-500">wb_sunny</span> Turno Mañana
+                    </p>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5" id="horarios-manana"></div>
+                </div>
+                
+                <!-- Tarde -->
+                <div class="space-y-2.5 pt-2 border-t border-outline-variant/10">
+                    <p class="text-xs font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[16px] text-orange-500">wb_twilight</span> Turno Tarde
+                    </p>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5" id="horarios-tarde"></div>
+                </div>
+
+                <!-- Noche -->
+                <div class="space-y-2.5 pt-2 border-t border-outline-variant/10">
+                    <p class="text-xs font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[16px] text-indigo-600">bedtime</span> Turno Noche (Horario Central)
+                    </p>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5" id="horarios-noche"></div>
+                </div>
+            </section>
         </div>
 
-        <!-- 2. Duración y Tipo -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div class="space-y-4">
-                <h3 class="text-sm font-bold text-on-surface-variant uppercase tracking-wider">Duración</h3>
-                <div class="flex gap-3" id="duracion-container">
-                    <button class="btn-duracion flex-1 py-3 rounded-xl font-bold text-sm bg-surface-container border border-outline-variant/20 text-on-surface hover:bg-surface-container-high transition-colors" data-val="60">60 min</button>
-                    <button class="btn-duracion flex-1 py-3 rounded-xl font-bold text-sm bg-[#84cc16] text-[#1a1a1a] shadow-sm ring-2 ring-[#84cc16] ring-offset-2 ring-offset-surface" data-val="90">90 min</button>
-                    <button class="btn-duracion flex-1 py-3 rounded-xl font-bold text-sm bg-surface-container border border-outline-variant/20 text-on-surface hover:bg-surface-container-high transition-colors" data-val="120">120 min</button>
+        <!-- COLUMNA DERECHA: Resumen Formal (34% - Sticky) -->
+        <div class="w-full lg:w-1/3 lg:sticky lg:top-6">
+            <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-md border border-outline-variant/20 flex flex-col gap-5">
+                <div class="border-b border-outline-variant/15 pb-3">
+                    <span class="text-[11px] font-bold uppercase tracking-widest text-primary block">Confirmación</span>
+                    <h2 class="font-headline font-extrabold text-xl text-on-surface">Resumen de Reserva</h2>
                 </div>
-            </div>
-            <div class="space-y-4">
-                <h3 class="text-sm font-bold text-on-surface-variant uppercase tracking-wider">Tipo de Cancha</h3>
-                <div class="flex gap-3" id="tipo-container">
-                    <button class="btn-tipo flex-1 py-3 rounded-xl font-bold text-sm bg-[#84cc16] text-[#1a1a1a] shadow-sm ring-2 ring-[#84cc16] ring-offset-2 ring-offset-surface" data-val="Cualquiera">Cualquiera</button>
-                    <button class="btn-tipo flex-1 py-3 rounded-xl font-bold text-sm bg-surface-container border border-outline-variant/20 text-on-surface hover:bg-surface-container-high transition-colors" data-val="Techada">Techada</button>
-                    <button class="btn-tipo flex-1 py-3 rounded-xl font-bold text-sm bg-surface-container border border-outline-variant/20 text-on-surface hover:bg-surface-container-high transition-colors" data-val="Descubierta">Descubierta</button>
+                
+                <!-- Info Cancha -->
+                <div class="bg-surface-container-low rounded-xl p-4 flex items-center gap-3.5 border border-outline-variant/15">
+                    <div class="w-11 h-11 bg-primary/10 text-primary rounded-xl flex items-center justify-center flex-shrink-0">
+                        <span class="material-symbols-outlined text-xl">sports_tennis</span>
+                    </div>
+                    <div>
+                        <p class="font-bold text-on-surface text-sm" id="resumen-cancha">Cancha 1</p>
+                        <p class="text-xs text-on-surface-variant font-medium" id="resumen-tipo">Cancha 1 (Techada)</p>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- 3. Horarios -->
-        <div class="space-y-6">
-            <h3 class="text-xl font-bold font-headline text-on-surface border-b border-outline-variant/20 pb-2">
-                Horarios para el <span id="txt-fecha-seleccionada" class="text-primary">Día</span>
-            </h3>
-            
-            <!-- Mañana -->
-            <div class="space-y-3">
-                <p class="text-sm font-semibold text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">wb_sunny</span> Mañana</p>
-                <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3" id="horarios-manana"></div>
-            </div>
-            
-            <!-- Tarde -->
-            <div class="space-y-3">
-                <p class="text-sm font-semibold text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">partly_cloudy_day</span> Tarde</p>
-                <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3" id="horarios-tarde"></div>
-            </div>
+                <!-- Detalles Alineados -->
+                <div class="bg-surface-container-low rounded-xl p-4 space-y-3 border border-outline-variant/15 text-sm">
+                    <div class="flex justify-between items-center pb-2.5 border-b border-outline-variant/15">
+                        <span class="text-on-surface-variant text-xs font-semibold uppercase tracking-wider">Fecha</span>
+                        <span class="font-bold text-on-surface text-right" id="resumen-fecha">--</span>
+                    </div>
+                    <div class="flex justify-between items-center pb-2.5 border-b border-outline-variant/15">
+                        <span class="text-on-surface-variant text-xs font-semibold uppercase tracking-wider">Horario</span>
+                        <span class="font-bold text-on-surface text-right" id="resumen-hora">Seleccione hora</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-on-surface-variant text-xs font-semibold uppercase tracking-wider">Duración</span>
+                        <span class="font-bold text-on-surface text-right" id="resumen-duracion">90 min</span>
+                    </div>
+                </div>
 
-            <!-- Noche -->
-            <div class="space-y-3">
-                <p class="text-sm font-semibold text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">bedtime</span> Noche</p>
-                <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3" id="horarios-noche"></div>
-            </div>
-        </div>
-    </div>
+                <!-- Desglose Económico -->
+                <div class="bg-surface-container-low rounded-xl p-4 space-y-2.5 border border-outline-variant/15">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-on-surface-variant font-semibold">Valor Total del Turno:</span>
+                        <span class="font-bold text-on-surface text-sm" id="resumen-total">$0</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-on-surface-variant font-semibold">Saldo a abonar en el club:</span>
+                        <span class="font-bold text-[#e65100]" id="resumen-restante">$0</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-2.5 border-t border-outline-variant/20">
+                        <div>
+                            <span class="font-extrabold text-on-surface text-xs uppercase tracking-wider block">Seña a Pagar Ahora</span>
+                            <span class="text-[11px] text-on-surface-variant">Vía MercadoPago</span>
+                        </div>
+                        <span class="text-2xl font-extrabold text-primary font-headline" id="resumen-sena">$0</span>
+                    </div>
+                </div>
 
-    <!-- COLUMNA DERECHA: Resumen (33% - Sticky) -->
-    <div class="w-full lg:w-1/3 sticky top-8">
-        <div class="bg-surface-container-lowest rounded-3xl p-6 shadow-xl border border-outline-variant/20 flex flex-col gap-6">
-            <h2 class="font-headline font-extrabold text-xl text-on-surface">Resumen de Reserva</h2>
-            
-            <!-- Info Cancha -->
-            <div class="bg-surface-container-low rounded-2xl p-4 flex items-start space-x-4">
-                <div class="w-12 h-12 bg-[#84cc16]/20 text-[#4d7c0f] rounded-xl flex items-center justify-center flex-shrink-0">
-                    <span class="material-symbols-outlined text-xl">sports_tennis</span>
-                </div>
-                <div>
-                    <p class="font-bold text-on-surface text-base" id="resumen-cancha">Cancha (Asignación Auto)</p>
-                    <p class="text-xs text-on-surface-variant font-medium mt-1" id="resumen-tipo">Cualquier tipo</p>
-                </div>
+                <!-- Botón Pago -->
+                <button id="btn-pagar-sena" class="w-full bg-primary text-on-primary py-3.5 px-4 rounded-xl font-headline font-bold text-sm hover:bg-primary-container hover:text-on-primary-container transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                    <span>Confirmar y Abonar Seña</span>
+                    <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+                </button>
             </div>
-
-            <!-- Detalles -->
-            <div class="bg-surface-container-low rounded-xl p-5 space-y-3">
-                <div class="flex justify-between items-center pb-3 border-b border-surface-variant/50">
-                    <span class="text-on-surface-variant text-sm font-medium">Fecha</span>
-                    <span class="font-bold text-on-surface text-sm" id="resumen-fecha">--</span>
-                </div>
-                <div class="flex justify-between items-center pb-3 border-b border-surface-variant/50">
-                    <span class="text-on-surface-variant text-sm font-medium">Hora</span>
-                    <span class="font-bold text-on-surface text-sm" id="resumen-hora">--:--</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-on-surface-variant text-sm font-medium">Duración</span>
-                    <span class="font-bold text-on-surface text-sm" id="resumen-duracion">90 min</span>
-                </div>
-            </div>
-
-            <!-- Totales -->
-            <div class="pt-2">
-                <div class="flex justify-between items-end mb-1">
-                    <span class="text-on-surface-variant text-sm font-medium">Total de la cancha</span>
-                    <span class="text-base font-bold text-on-surface" id="resumen-total">$0</span>
-                </div>
-                <div class="flex justify-between items-end mt-2">
-                    <span class="font-bold text-on-surface text-sm">Seña requerida</span>
-                    <span class="text-3xl font-extrabold text-primary font-headline" id="resumen-sena">$0</span>
-                </div>
-            </div>
-
-            <!-- Botón Pago -->
-            <button id="btn-pagar-sena" class="w-full bg-gradient-to-r from-primary to-[#65a30d] text-[#1a1a1a] py-4 rounded-xl font-bold text-lg hover:shadow-[0px_16px_32px_-10px_rgba(68,105,0,0.5)] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                Confirmar y Pagar <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
-            </button>
         </div>
     </div>
 </div>
 
-<div class="h-20"></div>
 <script src="js/controladores/cliente-reserva.js"></script>

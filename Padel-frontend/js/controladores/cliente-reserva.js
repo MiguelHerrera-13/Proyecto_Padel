@@ -1,12 +1,17 @@
 (function() {
     console.log("Controlador Nueva Reserva Cliente conectado a API MySQL");
 
-    // --- ESTADO DE LA RESERVA ---
+    const obtenerHoyIso = () => {
+        if (window.obtenerFechaHoyLocal) return window.obtenerFechaHoyLocal();
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+
     let estado = {
-        fechaIso: "",    
-        fechaStr: "",    
+        fechaIso: obtenerHoyIso(),
+        fechaStr: "Hoy",
         duracion: 90,
-        tipo: "Cualquiera",
+        tipo: "Cancha 1 (Techada)",
         hora: null,
         precioTotal: 0,
         sena: 2500,
@@ -16,11 +21,14 @@
     let canchasDisponibles = [];
     let turnosDelDia = [];
 
-    // Cargar tarifas y parámetros reales
+    const inputCalendario = document.getElementById('cliente-input-fecha');
+    const fechasContainer = document.getElementById('fechas-container');
+    const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
     async function inicializarParametrosYCanchas() {
         if (window.Almacenamiento && window.Almacenamiento.obtenerParametros) {
             const param = window.Almacenamiento.obtenerParametros();
-            if (param && param.senaFija) estado.sena = param.senaFija;
+            if (param && param.senaFija) estado.sena = parseFloat(param.senaFija);
         }
 
         try {
@@ -29,66 +37,80 @@
         } catch (e) {
             console.warn("No se pudieron cargar tarifas de canchas:", e);
         }
+
+        // Actualizar botones de cancha según catálogo real
+        const botonesTipo = document.querySelectorAll('.btn-tipo');
+        botonesTipo.forEach((btn, index) => {
+            const c = canchasDisponibles[index];
+            if (c) {
+                const num = index + 1;
+                const enMant = parseInt(c.activa) === 0;
+                btn.dataset.cancha = c.id;
+                btn.dataset.val = `Cancha ${num} (${c.tipo})`;
+                btn.innerHTML = `Cancha ${num} ${enMant ? '<span class="block text-[9px] text-error">Mant.</span>' : `<span class="block text-[10px] opacity-80">$${parseFloat(c.costo_base).toLocaleString('es-AR')}/h</span>`}`;
+                if (enMant) {
+                    btn.disabled = true;
+                    btn.className = 'btn-tipo py-2 px-2 rounded-xl font-bold text-xs bg-surface-container text-on-surface-variant/40 border border-outline-variant/15 cursor-not-allowed';
+                }
+            }
+        });
     }
 
-    // --- GENERAR FECHAS DINÁMICAS (Próximos 7 días) ---
-    const fechasContainer = document.getElementById('fechas-container');
-    const diasSemana = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
-    
+    function formatearFechaCorta(isoStr) {
+        const hoyIso = obtenerHoyIso();
+        const partes = isoStr.split('-');
+        const f = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]));
+        const diaNombre = (isoStr === hoyIso) ? 'Hoy' : diasSemana[f.getDay()];
+        return `${diaNombre} ${f.getDate()}/${partes[1]}`;
+    }
+
     function generarFechas() {
         if (!fechasContainer) return;
         fechasContainer.innerHTML = '';
-        let hoy = new Date();
+        const hoyIso = obtenerHoyIso();
+        const partesHoy = hoyIso.split('-');
+        const baseDate = new Date(parseInt(partesHoy[0]), parseInt(partesHoy[1]) - 1, parseInt(partesHoy[2]));
+
+        if (inputCalendario) {
+            inputCalendario.min = hoyIso;
+            inputCalendario.value = estado.fechaIso;
+        }
 
         for (let i = 0; i < 7; i++) {
-            let fechaIter = new Date(hoy);
-            fechaIter.setDate(hoy.getDate() + i);
-            
+            const fechaIter = new Date(baseDate);
+            fechaIter.setDate(baseDate.getDate() + i);
+
+            const y = fechaIter.getFullYear();
+            const m = String(fechaIter.getMonth() + 1).padStart(2, '0');
+            const d = String(fechaIter.getDate()).padStart(2, '0');
+            const fechaIso = `${y}-${m}-${d}`;
             const diaNombre = i === 0 ? 'Hoy' : diasSemana[fechaIter.getDay()];
             const diaNumero = fechaIter.getDate();
-            const fechaIso = fechaIter.toISOString().split('T')[0];
-            const fechaTxt = `${diaNombre} ${diaNumero}`;
+            const fechaTxt = `${diaNombre} ${diaNumero}/${m}`;
+
+            const esActiva = (estado.fechaIso === fechaIso);
 
             const btn = document.createElement('button');
-            btn.className = `flex flex-col items-center justify-center min-w-[80px] h-20 rounded-xl snap-start flex-shrink-0 transition-all btn-fecha
-                ${i === 0 
-                    ? 'bg-[#4d7c0f] text-white shadow-md ring-2 ring-[#84cc16] ring-offset-2 ring-offset-surface' 
-                    : 'bg-surface-container-lowest text-on-surface hover:bg-surface-container-low border border-outline-variant/10'}`;
-            
+            btn.type = 'button';
+            btn.className = esActiva
+                ? 'flex flex-col items-center justify-center py-3 px-2 rounded-xl bg-primary text-on-primary shadow-sm transition-all btn-fecha cursor-pointer'
+                : 'flex flex-col items-center justify-center py-3 px-2 rounded-xl bg-surface-container-low text-on-surface hover:bg-surface-container border border-outline-variant/15 transition-all btn-fecha cursor-pointer';
+
             btn.innerHTML = `
-                <span class="text-xs font-medium ${i===0 ? 'opacity-80' : 'text-on-surface-variant'}">${diaNombre}</span>
-                <span class="text-xl font-bold font-headline">${diaNumero}</span>
+                <span class="text-[11px] font-bold uppercase ${esActiva ? 'text-on-primary/90' : 'text-on-surface-variant'}">${diaNombre}</span>
+                <span class="text-lg font-extrabold font-headline mt-0.5">${diaNumero}</span>
             `;
 
             btn.dataset.iso = fechaIso;
             btn.dataset.txt = fechaTxt;
 
             btn.addEventListener('click', async () => {
-                document.querySelectorAll('.btn-fecha').forEach(b => {
-                    b.className = 'flex flex-col items-center justify-center min-w-[80px] h-20 bg-surface-container-lowest text-on-surface border border-outline-variant/10 rounded-xl snap-start flex-shrink-0 hover:bg-surface-container-low transition-all btn-fecha';
-                    const sp = b.querySelector('span:first-child');
-                    if (sp) { sp.classList.add('text-on-surface-variant'); sp.classList.remove('opacity-80'); }
-                });
-                
-                btn.className = 'flex flex-col items-center justify-center min-w-[80px] h-20 bg-[#4d7c0f] text-white rounded-xl snap-start flex-shrink-0 shadow-md ring-2 ring-[#84cc16] ring-offset-2 ring-offset-surface transition-all btn-fecha';
-                const spActive = btn.querySelector('span:first-child');
-                if (spActive) { spActive.classList.remove('text-on-surface-variant'); spActive.classList.add('opacity-80'); }
-
-                estado.fechaIso = btn.dataset.iso;
-                estado.fechaStr = btn.dataset.txt;
-                estado.hora = null; // Reiniciar horario al cambiar fecha
-
-                const elTxt = document.getElementById('txt-fecha-seleccionada');
-                if (elTxt) elTxt.textContent = estado.fechaStr;
-
-                await actualizarDisponibilidadFecha();
-                actualizarResumen();
+                await seleccionarFecha(fechaIso, fechaTxt);
             });
 
             fechasContainer.appendChild(btn);
 
-            if (i === 0) {
-                estado.fechaIso = fechaIso;
+            if (esActiva) {
                 estado.fechaStr = fechaTxt;
                 const elTxt = document.getElementById('txt-fecha-seleccionada');
                 if (elTxt) elTxt.textContent = estado.fechaStr;
@@ -96,7 +118,43 @@
         }
     }
 
-    // Consultar turnos ocupados en la fecha seleccionada
+    async function seleccionarFecha(nuevaIso, nuevaTxt) {
+        const hoyIso = obtenerHoyIso();
+        if (nuevaIso < hoyIso) {
+            if (window.mostrarNotificacion) {
+                window.mostrarNotificacion("No se pueden elegir fechas anteriores al día de hoy.", "error");
+            }
+            nuevaIso = hoyIso;
+        }
+
+        estado.fechaIso = nuevaIso;
+        estado.fechaStr = nuevaTxt || formatearFechaCorta(nuevaIso);
+        estado.hora = null;
+
+        if (inputCalendario) inputCalendario.value = estado.fechaIso;
+        const elTxt = document.getElementById('txt-fecha-seleccionada');
+        if (elTxt) elTxt.textContent = estado.fechaStr;
+
+        generarFechas();
+        await actualizarDisponibilidadFecha();
+        actualizarResumen();
+    }
+
+    if (inputCalendario) {
+        inputCalendario.min = obtenerHoyIso();
+        inputCalendario.addEventListener('change', async () => {
+            const hoyIso = obtenerHoyIso();
+            if (!inputCalendario.value) return;
+            if (inputCalendario.value < hoyIso) {
+                inputCalendario.value = hoyIso;
+                if (window.mostrarNotificacion) {
+                    window.mostrarNotificacion("No se permiten fechas anteriores al día de hoy.", "error");
+                }
+            }
+            await seleccionarFecha(inputCalendario.value, formatearFechaCorta(inputCalendario.value));
+        });
+    }
+
     async function actualizarDisponibilidadFecha() {
         if (!estado.fechaIso) return;
         try {
@@ -112,38 +170,35 @@
         renderizarTodosLosHorarios();
     }
 
-    // --- MANEJO DE BOTONES (Duración y Tipo) ---
-    function configurarBotonesGrupo(selectorClase, propiedadEstado) {
-        const botones = document.querySelectorAll(selectorClase);
-        botones.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                botones.forEach(b => {
-                    b.className = `${selectorClase.substring(1)} px-5 py-2.5 bg-surface-container-lowest text-on-surface rounded-xl text-sm font-medium hover:bg-surface-container-low transition-colors border border-outline-variant/10 flex-1`;
-                });
-                const cur = e.currentTarget;
-                cur.className = `${selectorClase.substring(1)} px-5 py-2.5 bg-[#84cc16] text-[#1a1a1a] rounded-xl text-sm font-bold shadow-sm ring-2 ring-[#84cc16] ring-offset-2 ring-offset-surface flex-1 transition-all`;
-                
-                if (propiedadEstado === 'duracion') {
-                    estado.duracion = parseInt(cur.dataset.val);
-                } else if (propiedadEstado === 'tipo') {
-                    estado.tipo = cur.dataset.val;
-                    if (estado.tipo.includes('Techada')) estado.canchaId = 1;
-                    else if (estado.tipo.includes('Descubierta')) estado.canchaId = 2;
-                    else if (estado.tipo.includes('Premium')) estado.canchaId = 3;
-                    else estado.canchaId = 1;
-                }
-
-                estado.hora = null;
-                renderizarTodosLosHorarios();
-                actualizarResumen();
+    // --- MANEJO DE BOTONES (Duración y Cancha) ---
+    document.querySelectorAll('.btn-duracion').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.btn-duracion').forEach(b => {
+                b.className = 'btn-duracion py-2.5 px-3 rounded-xl font-bold text-xs bg-surface-container-low border border-outline-variant/20 text-on-surface hover:bg-surface-container transition-all cursor-pointer';
             });
+            const cur = e.currentTarget;
+            cur.className = 'btn-duracion py-2.5 px-3 rounded-xl font-bold text-xs bg-primary text-on-primary shadow-sm transition-all cursor-pointer';
+            estado.duracion = parseInt(cur.dataset.val);
+            actualizarResumen();
         });
-    }
+    });
 
-    configurarBotonesGrupo('.btn-duracion', 'duracion');
-    configurarBotonesGrupo('.btn-tipo', 'tipo');
+    document.querySelectorAll('.btn-tipo').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            if (e.currentTarget.disabled) return;
+            document.querySelectorAll('.btn-tipo:not([disabled])').forEach(b => {
+                b.className = 'btn-tipo py-2.5 px-2 rounded-xl font-bold text-xs bg-surface-container-low border border-outline-variant/20 text-on-surface hover:bg-surface-container transition-all cursor-pointer';
+            });
+            const cur = e.currentTarget;
+            cur.className = 'btn-tipo py-2.5 px-2 rounded-xl font-bold text-xs bg-primary text-on-primary shadow-sm transition-all cursor-pointer';
+            estado.canchaId = parseInt(cur.dataset.cancha || 1);
+            estado.tipo = cur.dataset.val || `Cancha ${estado.canchaId}`;
+            estado.hora = null;
+            renderizarTodosLosHorarios();
+            actualizarResumen();
+        });
+    });
 
-    // --- HORARIOS DISPONIBLES ---
     const horariosManana = ['08:00', '09:30', '11:00', '12:30'];
     const horariosTarde = ['14:00', '15:30', '17:00', '18:30'];
     const horariosNoche = ['20:00', '21:30', '23:00'];
@@ -154,33 +209,32 @@
         contenedor.innerHTML = '';
 
         listaHoras.forEach(hora => {
-            // Verificar si este horario está ocupado en la cancha elegida
-            const horaFormato = hora + ':00';
             const estaOcupado = turnosDelDia.some(t => {
                 const mismaCancha = (parseInt(t.cancha_id) === estado.canchaId);
-                const turnoNoCancelado = (t.estado !== 'CANCELADO');
+                const turnoActivo = (t.estado !== 'CANCELADO' && t.estado !== 'FINALIZADO');
                 const tHora = (t.hora_inicio || '').substring(0, 5);
-                return mismaCancha && turnoNoCancelado && tHora === hora;
+                return mismaCancha && turnoActivo && tHora === hora;
             });
 
             const btn = document.createElement('button');
-            
+            btn.type = 'button';
+
             if (estaOcupado) {
-                btn.className = 'btn-hora py-2.5 px-2 bg-surface-container-high text-on-surface-variant/40 rounded-xl text-xs font-medium cursor-not-allowed border border-outline-variant/10 line-through';
-                btn.textContent = `${hora} (Ocupado)`;
+                btn.className = 'btn-hora py-2.5 px-3 bg-surface-container text-on-surface-variant/40 rounded-xl text-xs font-bold cursor-not-allowed border border-outline-variant/10 line-through';
+                btn.textContent = `${hora} (Reservado)`;
                 btn.disabled = true;
             } else {
                 const esSeleccionado = (estado.hora === hora);
                 btn.className = esSeleccionado
-                    ? 'btn-hora py-2.5 px-2 bg-[#4d7c0f] text-white rounded-xl text-sm font-bold shadow-sm ring-2 ring-[#84cc16] ring-offset-2 ring-offset-surface transition-all'
-                    : 'btn-hora py-2.5 px-2 bg-surface-container-lowest text-on-surface rounded-xl text-sm font-medium hover:bg-surface-container-low transition-colors border border-outline-variant/10';
-                btn.textContent = hora;
+                    ? 'btn-hora py-2.5 px-3 bg-primary text-on-primary rounded-xl text-xs font-extrabold shadow-sm transition-all cursor-pointer'
+                    : 'btn-hora py-2.5 px-3 bg-surface-container-low text-on-surface rounded-xl text-xs font-bold hover:bg-surface-container transition-colors border border-outline-variant/15 cursor-pointer';
+                btn.textContent = `${hora} hs`;
 
                 btn.addEventListener('click', () => {
                     document.querySelectorAll('.btn-hora:not([disabled])').forEach(b => {
-                        b.className = 'btn-hora py-2.5 px-2 bg-surface-container-lowest text-on-surface rounded-xl text-sm font-medium hover:bg-surface-container-low transition-colors border border-outline-variant/10';
+                        b.className = 'btn-hora py-2.5 px-3 bg-surface-container-low text-on-surface rounded-xl text-xs font-bold hover:bg-surface-container transition-colors border border-outline-variant/15 cursor-pointer';
                     });
-                    btn.className = 'btn-hora py-2.5 px-2 bg-[#4d7c0f] text-white rounded-xl text-sm font-bold shadow-sm ring-2 ring-[#84cc16] ring-offset-2 ring-offset-surface transition-all';
+                    btn.className = 'btn-hora py-2.5 px-3 bg-primary text-on-primary rounded-xl text-xs font-extrabold shadow-sm transition-all cursor-pointer';
                     estado.hora = hora;
                     actualizarResumen();
                 });
@@ -196,39 +250,45 @@
         renderizarHorarios('horarios-noche', horariosNoche);
     }
 
-    // --- ACTUALIZAR TICKET DE RESUMEN ---
     function actualizarResumen() {
         const elFecha = document.getElementById('resumen-fecha');
         if (!elFecha) return;
-        
+
         elFecha.textContent = estado.fechaStr || '--';
-        document.getElementById('resumen-hora').textContent = estado.hora ? `${estado.hora} hs` : '--:--';
+        document.getElementById('resumen-hora').textContent = estado.hora ? `${estado.hora} hs` : 'Seleccione hora';
         document.getElementById('resumen-duracion').textContent = `${estado.duracion} min`;
+        document.getElementById('resumen-cancha').textContent = `Cancha ${estado.canchaId}`;
         document.getElementById('resumen-tipo').textContent = estado.tipo;
 
-        // Tarifa real de la cancha
         let costoHora = 8500;
-        const cancha = canchasDisponibles.find(c => c.id == estado.canchaId);
+        const cancha = canchasDisponibles.find(c => parseInt(c.id) === parseInt(estado.canchaId));
         if (cancha && cancha.costo_base) costoHora = parseFloat(cancha.costo_base);
 
-        estado.precioTotal = (estado.duracion / 60) * costoHora;
-        
+        estado.precioTotal = Math.round((estado.duracion / 60) * costoHora);
+        const saldoRestante = Math.max(0, estado.precioTotal - estado.sena);
+
         document.getElementById('resumen-total').textContent = `$${estado.precioTotal.toLocaleString('es-AR')}`;
         document.getElementById('resumen-sena').textContent = `$${estado.sena.toLocaleString('es-AR')}`;
+        const elRestante = document.getElementById('resumen-restante');
+        if (elRestante) elRestante.textContent = `$${saldoRestante.toLocaleString('es-AR')}`;
 
-        // Habilitar o deshabilitar botón de pago
         const btnPagar = document.getElementById('btn-pagar-sena');
         if (btnPagar) {
             btnPagar.disabled = !(estado.fechaIso && estado.hora);
         }
     }
 
-    // --- PROCESAR PAGO DE SEÑA Y GUARDAR TURNO EN MYSQL ---
     const btnPagar = document.getElementById('btn-pagar-sena');
     if (btnPagar) {
         btnPagar.addEventListener('click', async () => {
             if (!estado.hora) {
-                alert("Por favor, seleccioná un horario disponible para avanzar.");
+                if (window.mostrarNotificacion) window.mostrarNotificacion("Por favor, selecciona un horario disponible.", "error");
+                return;
+            }
+
+            const hoyIso = obtenerHoyIso();
+            if (estado.fechaIso < hoyIso) {
+                if (window.mostrarNotificacion) window.mostrarNotificacion("No puedes reservar en una fecha anterior a hoy.", "error");
                 return;
             }
 
@@ -241,10 +301,9 @@
             const usuarioId = usuario ? usuario.id : 3;
 
             btnPagar.disabled = true;
-            btnPagar.textContent = "Conectando con MercadoPago...";
+            btnPagar.textContent = "Procesando reserva...";
 
             try {
-                // 1. Guardar turno en MySQL vía api/turnos.php
                 const resTurno = await fetch('../api/turnos.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -263,13 +322,12 @@
 
                 if (!resTurno.ok) {
                     const err = await resTurno.json();
-                    alert(err.error || "No se pudo reservar el turno. Probá con otro horario.");
+                    if (window.mostrarNotificacion) window.mostrarNotificacion(err.error || "No se pudo reservar el turno.", "error");
                     btnPagar.disabled = false;
-                    btnPagar.textContent = "Pagar Seña con MercadoPago";
+                    btnPagar.innerHTML = `<span>Confirmar y Abonar Seña</span><span class="material-symbols-outlined text-[18px]">arrow_forward</span>`;
                     return;
                 }
 
-                // 2. Registrar el ingreso de la seña en la Caja de MySQL
                 try {
                     await fetch('../api/caja.php', {
                         method: 'POST',
@@ -285,21 +343,21 @@
                     console.warn("No se pudo registrar la seña en caja:", errCaja);
                 }
 
-                alert(`🎉 ¡Pago de seña exitoso mediante MercadoPago!\n\nTu reserva para el ${estado.fechaStr} a las ${estado.hora} hs en Cancha ${estado.canchaId} está CONFIRMADA.\n\nSeña abonada: $${estado.sena.toLocaleString('es-AR')}`);
+                if (window.mostrarNotificacion) {
+                    window.mostrarNotificacion(`¡Reserva confirmada! Seña abonada: $${estado.sena.toLocaleString('es-AR')}.`);
+                }
 
-                // Redirigir directamente a Mis Reservas
                 window.location.hash = '#/cliente/mis-reservas';
 
             } catch (error) {
                 console.error("Error al procesar reserva:", error);
-                alert("Error de conexión al confirmar la reserva.");
+                if (window.mostrarNotificacion) window.mostrarNotificacion("Error de conexión al confirmar la reserva.", "error");
                 btnPagar.disabled = false;
-                btnPagar.textContent = "Pagar Seña con MercadoPago";
+                btnPagar.innerHTML = `<span>Confirmar y Abonar Seña</span><span class="material-symbols-outlined text-[18px]">arrow_forward</span>`;
             }
         });
     }
 
-    // Inicializar todo
     (async () => {
         await inicializarParametrosYCanchas();
         generarFechas();

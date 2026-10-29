@@ -1,61 +1,83 @@
-<div class="max-w-7xl mx-auto space-y-12">
-    <div class="flex justify-between items-end">
-        <div>
-            <h1 class="font-headline text-4xl font-extrabold text-on-surface tracking-tight mb-2">Control de Caja</h1>
-            <p class="text-on-surface-variant font-medium">Resumen contable de la jornada actual.</p>
+<div class="max-w-7xl mx-auto p-6 md:p-8 space-y-8">
+    <!-- Encabezado Formal -->
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-outline-variant/20 pb-5">
+        <div class="text-left">
+            <h1 class="font-headline text-3xl font-extrabold text-on-surface tracking-tight">Control de Ventas y Caja</h1>
+            <p class="text-sm text-on-surface-variant font-medium mt-1">Registro contable de ingresos en efectivo, cobros digitales, pagos a proveedores y arqueo de jornada.</p>
         </div>
-        <div class="text-right">
-            <p class="text-sm text-on-surface-variant font-medium">Ultima actualización</p>
-            <p class="font-headline font-bold text-on-surface">Hoy, 14:30 hrs</p>
+        <div class="text-left sm:text-right bg-surface-container-lowest px-4 py-2.5 rounded-xl border border-outline-variant/20 shadow-sm">
+            <p class="text-[11px] uppercase tracking-wider text-on-surface-variant font-bold">Última actualización</p>
+            <p id="caja-ultima-actualizacion" class="font-headline text-sm font-bold text-on-surface">Sincronizando...</p>
         </div>
     </div>
 
+    <!-- Tarjetas KPI de Caja -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-surface-container-lowest rounded-xl p-8 flex flex-col justify-between relative overflow-hidden group">
-            <div class="absolute top-0 right-0 p-6 opacity-10 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform duration-500">
-                <span class="material-symbols-outlined text-8xl text-primary">payments</span>
+        <div class="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/20 shadow-sm flex flex-col justify-between text-left relative overflow-hidden">
+            <div class="flex items-center justify-between mb-3">
+                <p class="font-label text-xs font-bold text-on-surface-variant uppercase tracking-wider">Efectivo Disponible en Caja</p>
+                <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[22px]">payments</span>
+                </div>
             </div>
-            <p class="font-label text-sm font-semibold text-on-surface-variant uppercase tracking-widest mb-4 z-10">Efectivo en Caja</p>
-            <h2 id="kpi-efectivo" class="font-headline text-5xl font-black text-on-surface z-10">$ 0</h2>
-            <div class="mt-4 flex items-center gap-2 text-primary font-medium text-sm z-10">
-                <span class="material-symbols-outlined text-sm">trending_up</span>
-                <span>Calculado en vivo</span>
-            </div>
-        </div>
-        <div class="bg-surface-container-low rounded-xl p-8 flex flex-col justify-between">
-            <p class="font-label text-sm font-semibold text-on-surface-variant uppercase tracking-widest mb-4">Ventas Digitales</p>
-            <h2 id="kpi-digitales" class="font-headline text-5xl font-black text-on-surface">$ 0</h2>
-            <div class="mt-4 flex items-center gap-2 text-on-surface-variant font-medium text-sm">
-                <span class="material-symbols-outlined text-sm">credit_card</span>
-                <span>MercadoPago / Transferencias</span>
+            <h2 id="kpi-efectivo" class="font-headline text-4xl font-extrabold text-on-surface tracking-tight">$ 0</h2>
+            <div class="mt-4 pt-3 border-t border-outline-variant/15 flex items-center gap-2 text-primary font-semibold text-xs">
+                <span class="material-symbols-outlined text-[16px]">trending_up</span>
+                <span>Ingresos efectivo menos egresos/retiros</span>
             </div>
         </div>
-        <div class="bg-primary rounded-xl p-8 flex flex-col justify-between bg-gradient-to-br from-primary to-[#5a8a00] text-on-primary shadow-sm">
-            <p class="font-label text-sm font-semibold text-primary-fixed uppercase tracking-widest mb-4">Total Recaudado Hoy</p>
-            <h2 id="kpi-total" class="font-headline text-5xl font-black">$ 0</h2>
-            <div class="mt-4 flex items-center gap-2 text-primary-container font-medium text-sm">
-                <span class="material-symbols-outlined text-sm">account_balance</span>
-                <span>Balance general consolidado</span>
+
+        <div class="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/20 shadow-sm flex flex-col justify-between text-left">
+            <div class="flex items-center justify-between mb-3">
+                <p class="font-label text-xs font-bold text-on-surface-variant uppercase tracking-wider">Ventas Digitales</p>
+                <div class="w-10 h-10 rounded-xl bg-[#e3f2fd] text-[#1565c0] flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[22px]">credit_card</span>
+                </div>
+            </div>
+            <h2 id="kpi-digitales" class="font-headline text-4xl font-extrabold text-on-surface tracking-tight">$ 0</h2>
+            <div class="mt-4 pt-3 border-t border-outline-variant/15 flex items-center gap-2 text-on-surface-variant font-semibold text-xs">
+                <span class="material-symbols-outlined text-[16px] text-[#1565c0]">verified</span>
+                <span>MercadoPago / Transferencias acreditadas</span>
+            </div>
+        </div>
+
+        <div class="rounded-2xl p-6 flex flex-col justify-between bg-gradient-to-br from-primary to-[#5a8a00] text-on-primary shadow-md text-left">
+            <div class="flex items-center justify-between mb-3">
+                <p class="font-label text-xs font-bold text-primary-fixed uppercase tracking-wider">Total Recaudado (Bruto)</p>
+                <div class="w-10 h-10 rounded-xl bg-white/15 text-white flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[22px]">account_balance</span>
+                </div>
+            </div>
+            <h2 id="kpi-total" class="font-headline text-4xl font-extrabold tracking-tight">$ 0</h2>
+            <div class="mt-4 pt-3 border-t border-white/20 flex items-center gap-2 text-primary-fixed font-semibold text-xs">
+                <span class="material-symbols-outlined text-[16px]">monitoring</span>
+                <span>Suma consolidada de efectivo + digital</span>
             </div>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div class="lg:col-span-7 bg-surface-container-low rounded-xl p-10">
-            <div class="mb-8 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-surface-container-lowest flex items-center justify-center text-primary">
-                    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+    <!-- Sección Principal: Formulario + Historial -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <!-- Formulario Registrar Movimiento -->
+        <div class="lg:col-span-7 bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/20 shadow-sm text-left">
+            <div class="mb-6 pb-4 border-b border-outline-variant/15 flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                    <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">add_circle</span>
                 </div>
-                <h3 class="font-headline text-2xl font-bold text-on-surface">Registrar Movimiento</h3>
+                <div>
+                    <h3 class="font-headline text-xl font-bold text-on-surface">Registrar Movimiento</h3>
+                    <p class="text-xs text-on-surface-variant font-medium">Complete los datos de la operación para impactar en el libro de caja.</p>
+                </div>
             </div>
-            <form class="space-y-6">
-                <div class="space-y-2">
-                    <label class="font-label text-sm font-semibold text-on-surface-variant">Tipo de Movimiento</label>
-                    <div class="relative ghost-border-focus rounded-lg transition-all duration-200">
-                        <select id="caja-tipo" class="w-full bg-surface-container-highest text-on-surface font-medium rounded-lg px-4 py-4 appearance-none border-none focus:ring-0 cursor-pointer">
+
+            <form class="space-y-5" onsubmit="return false;">
+                <div class="space-y-1.5">
+                    <label class="block font-label text-xs font-bold uppercase tracking-wider text-on-surface-variant">Tipo de Movimiento</label>
+                    <div class="relative">
+                        <select id="caja-tipo" class="w-full bg-surface-container-low text-on-surface font-semibold text-sm rounded-xl px-4 py-3.5 appearance-none border border-outline-variant/30 focus:border-primary focus:ring-2 focus:ring-primary/20 cursor-pointer">
                             <option value="INGRESO">Ingreso Efectivo (Mostrador)</option>
-                            <option value="INGRESO_MP">Ingreso Digital (MercadoPago / Transf.)</option>
-                            <option value="EGRESO">Egreso (Pago a proveedor, limpieza)</option>
+                            <option value="INGRESO_MP">Ingreso Digital (MercadoPago / Transferencia)</option>
+                            <option value="EGRESO">Egreso (Pago a proveedor / Gasto operativo)</option>
                             <option value="RETIRO">Retiro de Caja (Cierre parcial)</option>
                         </select>
                         <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-on-surface-variant">
@@ -64,10 +86,14 @@
                     </div>
                 </div>
 
-                <div class="space-y-2" id="contenedor-producto">
-                    <label class="font-label text-sm font-semibold text-on-surface-variant">Venta de Inventario (Opcional)</label>
-                    <div class="relative ghost-border-focus rounded-lg transition-all duration-200">
-                        <select id="caja-producto-select" class="w-full bg-surface-container-highest text-on-surface font-medium rounded-lg px-4 py-4 appearance-none border-none focus:ring-0 cursor-pointer">
+                <!-- Selector de Producto -->
+                <div class="space-y-1.5" id="contenedor-producto">
+                    <div class="flex items-center justify-between">
+                        <label id="label-caja-producto" class="block font-label text-xs font-bold uppercase tracking-wider text-on-surface-variant">Venta de Inventario (Opcional)</label>
+                        <span id="badge-modo-digital" class="hidden text-[11px] font-bold text-[#1565c0] bg-[#e3f2fd] px-2.5 py-0.5 rounded-md">Selección de producto obligatoria</span>
+                    </div>
+                    <div class="relative">
+                        <select id="caja-producto-select" class="w-full bg-surface-container-low text-on-surface font-medium text-sm rounded-xl px-4 py-3.5 appearance-none border border-outline-variant/30 focus:border-primary focus:ring-2 focus:ring-primary/20 cursor-pointer">
                             <option value="">-- Venta manual o sin producto --</option>
                         </select>
                         <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-on-surface-variant">
@@ -76,11 +102,12 @@
                     </div>
                 </div>
 
-                <div class="space-y-2 hidden" id="contenedor-proveedor">
-                    <label class="font-label text-sm font-semibold text-on-surface-variant">Pago a Proveedor (Opcional)</label>
-                    <div class="relative ghost-border-focus rounded-lg transition-all duration-200">
-                        <select id="caja-proveedor-select" class="w-full bg-surface-container-highest text-on-surface font-medium rounded-lg px-4 py-4 appearance-none border-none focus:ring-0 cursor-pointer">
-                            <option value="">-- Pago manual o servicios --</option>
+                <!-- Selector de Proveedor (para EGRESO) -->
+                <div class="space-y-1.5 hidden" id="contenedor-proveedor">
+                    <label class="block font-label text-xs font-bold uppercase tracking-wider text-on-surface-variant">Asociar a Proveedor (Opcional)</label>
+                    <div class="relative">
+                        <select id="caja-proveedor-select" class="w-full bg-surface-container-low text-on-surface font-medium text-sm rounded-xl px-4 py-3.5 appearance-none border border-outline-variant/30 focus:border-primary focus:ring-2 focus:ring-primary/20 cursor-pointer">
+                            <option value="">-- Gasto operativo general / Otro --</option>
                         </select>
                         <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-on-surface-variant">
                             <span class="material-symbols-outlined">local_shipping</span>
@@ -88,56 +115,192 @@
                     </div>
                 </div>
 
-                <div class="space-y-2">
-                    <label class="font-label text-sm font-semibold text-on-surface-variant">Monto ($)</label>
-                    <div class="relative ghost-border-focus rounded-lg transition-all duration-200">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <span class="text-on-surface-variant font-bold">$</span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="block font-label text-xs font-bold uppercase tracking-wider text-on-surface-variant">Monto ($)</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <span class="text-on-surface-variant font-bold">$</span>
+                            </div>
+                            <input id="caja-monto" class="w-full bg-surface-container-low text-on-surface font-headline font-bold text-lg rounded-xl pl-9 pr-4 py-3 border border-outline-variant/30 focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder-on-surface-variant/40 transition-colors" placeholder="0.00" type="number" min="0" step="0.01"/>
                         </div>
-                        <input id="caja-monto" class="w-full bg-surface-container-highest text-on-surface font-headline font-bold text-xl rounded-lg pl-10 pr-4 py-4 border-none focus:ring-0 placeholder-on-surface-variant/40" placeholder="0.00" type="number"/>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block font-label text-xs font-bold uppercase tracking-wider text-on-surface-variant">Producto / Concepto</label>
+                        <input id="caja-concepto" class="w-full bg-surface-container-low text-on-surface font-medium text-sm rounded-xl px-4 py-3.5 border border-outline-variant/30 focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder-on-surface-variant/50 transition-colors" placeholder="Ej. Venta bebida, cobro turno..." type="text"/>
                     </div>
                 </div>
-                <div class="space-y-2">
-                    <label class="font-label text-sm font-semibold text-on-surface-variant">Concepto / Detalle</label>
-                    <div class="relative ghost-border-focus rounded-lg transition-all duration-200">
-                        <input id="caja-concepto" class="w-full bg-surface-container-highest text-on-surface font-medium rounded-lg px-4 py-4 border-none focus:ring-0 placeholder-on-surface-variant/40" placeholder="Ej. Pago pelotas, Bebidas mostrador..." type="text"/>
-                    </div>
-                </div>
-                <div class="pt-4">
-                    <button id="btn-registrar-caja" class="w-full bg-primary text-on-primary font-headline font-bold text-lg py-5 rounded-xl shadow-sm hover:bg-on-primary-fixed-variant transition-all hover:-translate-y-1" type="button"> Registrar en Caja </button>
+
+                <div class="pt-2">
+                    <button id="btn-registrar-caja" class="w-full bg-primary text-on-primary font-headline font-bold text-base py-4 rounded-xl shadow-sm hover:bg-on-primary-fixed-variant transition-all flex items-center justify-center gap-2 cursor-pointer" type="button">
+                        <span class="material-symbols-outlined text-[20px]">check_circle</span>
+                        Registrar Movimiento en Caja
+                    </button>
                 </div>
             </form>
         </div>
         
-        <div class="lg:col-span-5 bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col">
-            <div class="mb-6 flex justify-between items-center">
-                <h3 class="font-headline text-xl font-bold text-on-surface">Historial de Jornada</h3>
-                <button class="text-primary font-semibold text-sm hover:underline">Ver todo</button>
-            </div>
-            <div id="caja-historial" class="flex-grow overflow-y-auto pr-2 space-y-2">
+        <!-- Panel Lateral: Historial de Jornada -->
+        <div class="lg:col-span-5 bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/20 shadow-sm flex flex-col h-[520px] text-left">
+            <div class="mb-4 pb-4 border-b border-outline-variant/15 flex justify-between items-center">
+                <div>
+                    <h3 class="font-headline text-lg font-bold text-on-surface">Historial de Jornada</h3>
+                    <p class="text-xs text-on-surface-variant">Tocá un movimiento para ver su detalle</p>
                 </div>
+                <button id="btn-ver-todo-historial" type="button" class="inline-flex items-center gap-1 text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg font-bold text-xs transition-colors cursor-pointer">
+                    <span>Ver todo</span>
+                    <span class="material-symbols-outlined text-[16px]">open_in_full</span>
+                </button>
+            </div>
+            <div id="caja-historial" class="flex-1 overflow-y-auto pr-1 space-y-2">
+                <!-- Inyectado por empleado-caja.js -->
+            </div>
         </div>
     </div>
 
-    <div class="bg-error-container rounded-xl p-8 flex flex-col md:flex-row justify-between items-center gap-6 mt-8">
-        <div class="flex items-center gap-6">
-            <div class="w-14 h-14 rounded-full bg-[#93000a]/10 flex items-center justify-center text-[#93000a]">
-                <span class="material-symbols-outlined text-3xl">lock_clock</span>
+    <!-- Banner de Cierre de Caja -->
+    <div class="bg-error-container/40 border border-error/25 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div class="flex items-center gap-4 text-left">
+            <div class="w-12 h-12 rounded-xl bg-[#93000a]/15 flex items-center justify-center text-[#93000a] flex-shrink-0">
+                <span class="material-symbols-outlined text-2xl">lock_clock</span>
             </div>
             <div>
-                <h4 class="font-headline text-xl font-bold text-[#93000a]">Cierre de Caja Operativo</h4>
-                <p class="text-[#93000a]/80 font-medium mt-1">Verifica los montos en efectivo antes de finalizar la jornada.</p>
+                <h4 class="font-headline text-lg font-bold text-[#93000a]">Cierre de Caja Operativo</h4>
+                <p class="text-xs sm:text-sm text-[#93000a]/85 font-medium mt-0.5">Verifique los montos físicos en efectivo antes de confirmar el arqueo y finalizar la jornada.</p>
             </div>
         </div>
-        <button id="btn-cerrar-caja" class="whitespace-nowrap bg-[#93000a] text-on-error font-headline font-bold px-8 py-4 rounded-xl shadow-sm hover:bg-[#ba1a1a] transition-colors"> Finalizar Jornada y Cerrar Caja </button>
+        <button id="btn-cerrar-caja" class="w-full md:w-auto whitespace-nowrap bg-[#93000a] text-on-error font-headline font-bold text-sm px-6 py-3.5 rounded-xl shadow-sm hover:bg-[#ba1a1a] transition-colors cursor-pointer">
+            Finalizar Jornada y Cerrar Caja
+        </button>
     </div>
 
-    <dialog id="modal-cierre-caja" class="bg-transparent m-auto p-0 backdrop:bg-surface-container-highest/60 backdrop:backdrop-blur-sm transition-all w-full max-w-sm">
+    <!-- MODAL 1: Historial Completo de Movimientos ("Ver todo") -->
+    <dialog id="modal-historial-completo" class="bg-transparent m-auto p-0 backdrop:bg-black/50 backdrop:backdrop-blur-sm transition-all w-full max-w-4xl">
+        <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 shadow-2xl border border-outline-variant/25 flex flex-col gap-6 max-h-[88vh] text-left">
+            <div class="flex items-center justify-between border-b border-outline-variant/20 pb-4">
+                <div>
+                    <h2 class="font-headline font-extrabold text-2xl text-on-surface">Auditoría Completa de Movimientos</h2>
+                    <p class="text-xs text-on-surface-variant mt-1">Detalle desglosado de todos los ingresos, cobros digitales, pagos a proveedores y retiros.</p>
+                </div>
+                <button id="btn-cerrar-historial-completo" class="p-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <!-- Resumen rápido dentro del modal -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="bg-[#e8f5e9]/60 border border-[#4caf50]/20 rounded-xl p-3.5">
+                    <p class="text-[11px] font-bold uppercase text-[#2e7d32]">Ingresos Efectivo</p>
+                    <p id="modal-hist-efectivo" class="font-headline font-extrabold text-lg text-[#2e7d32] mt-0.5">$0</p>
+                </div>
+                <div class="bg-[#e3f2fd]/60 border border-[#2196f3]/20 rounded-xl p-3.5">
+                    <p class="text-[11px] font-bold uppercase text-[#1565c0]">Ingresos Digitales</p>
+                    <p id="modal-hist-digital" class="font-headline font-extrabold text-lg text-[#1565c0] mt-0.5">$0</p>
+                </div>
+                <div class="bg-[#fff3e0]/70 border border-[#ffb74d]/30 rounded-xl p-3.5">
+                    <p class="text-[11px] font-bold uppercase text-[#e65100]">Egresos / Pagos</p>
+                    <p id="modal-hist-egresos" class="font-headline font-extrabold text-lg text-[#e65100] mt-0.5">$0</p>
+                </div>
+                <div class="bg-[#ffebee]/70 border border-[#ef5350]/20 rounded-xl p-3.5">
+                    <p class="text-[11px] font-bold uppercase text-[#c62828]">Retiros de Caja</p>
+                    <p id="modal-hist-retiros" class="font-headline font-extrabold text-lg text-[#c62828] mt-0.5">$0</p>
+                </div>
+            </div>
+
+            <!-- Filtros del Modal -->
+            <div class="flex flex-wrap items-center justify-between gap-3 bg-surface-container-low p-3 rounded-xl">
+                <div class="flex flex-wrap gap-2" id="filtros-modal-historial">
+                    <button type="button" data-filtro="TODOS" class="btn-filtro-hist px-3.5 py-1.5 rounded-lg text-xs font-bold bg-primary text-on-primary shadow-sm cursor-pointer">Todos</button>
+                    <button type="button" data-filtro="INGRESO" class="btn-filtro-hist px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-surface-container-lowest text-on-surface hover:bg-surface-container cursor-pointer">Efectivo</button>
+                    <button type="button" data-filtro="INGRESO_MP" class="btn-filtro-hist px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-surface-container-lowest text-on-surface hover:bg-surface-container cursor-pointer">Digital MP</button>
+                    <button type="button" data-filtro="EGRESO" class="btn-filtro-hist px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-surface-container-lowest text-on-surface hover:bg-surface-container cursor-pointer">Egresos</button>
+                    <button type="button" data-filtro="RETIRO" class="btn-filtro-hist px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-surface-container-lowest text-on-surface hover:bg-surface-container cursor-pointer">Retiros</button>
+                </div>
+                <div class="relative flex-1 min-w-[200px]">
+                    <input id="input-buscar-historial" type="text" placeholder="Buscar por concepto u operador..." class="w-full bg-surface-container-lowest text-xs font-medium rounded-lg pl-3 pr-3 py-2 border border-outline-variant/25 focus:outline-none focus:border-primary"/>
+                </div>
+            </div>
+
+            <!-- Tabla Completa -->
+            <div class="overflow-y-auto flex-1 border border-outline-variant/20 rounded-xl">
+                <table class="w-full text-left text-xs sm:text-sm border-collapse">
+                    <thead class="bg-surface-container-low text-on-surface-variant uppercase text-[11px] sticky top-0 z-10 border-b border-outline-variant/20">
+                        <tr>
+                            <th class="px-4 py-3 font-bold">Operación</th>
+                            <th class="px-4 py-3 font-bold">Fecha y Hora</th>
+                            <th class="px-4 py-3 font-bold">Operador</th>
+                            <th class="px-4 py-3 font-bold">Categoría</th>
+                            <th class="px-4 py-3 font-bold">Concepto / Detalle</th>
+                            <th class="px-4 py-3 font-bold text-center">Modalidad</th>
+                            <th class="px-4 py-3 font-bold text-right">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-historial-completo-body" class="divide-y divide-outline-variant/15">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- MODAL 2: Detalle Individual de un Movimiento -->
+    <dialog id="modal-detalle-movimiento" class="bg-transparent m-auto p-0 backdrop:bg-black/50 backdrop:backdrop-blur-sm transition-all w-full max-w-md">
+        <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 shadow-2xl border border-outline-variant/25 flex flex-col gap-5 text-left">
+            <div class="flex items-center justify-between border-b border-outline-variant/15 pb-4">
+                <div class="flex items-center gap-3">
+                    <div id="det-mov-icono-bg" class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                        <span class="material-symbols-outlined">receipt</span>
+                    </div>
+                    <div>
+                        <h3 id="det-mov-id" class="font-headline font-extrabold text-lg text-on-surface">Comprobante #000</h3>
+                        <p id="det-mov-fecha" class="text-xs text-on-surface-variant">--</p>
+                    </div>
+                </div>
+                <button id="btn-cerrar-detalle-mov" class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low cursor-pointer">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="bg-surface-container-low rounded-xl p-4 space-y-3 text-sm">
+                <div class="flex justify-between items-center border-b border-outline-variant/15 pb-2.5">
+                    <span class="text-on-surface-variant font-medium">Tipo de Operación:</span>
+                    <span id="det-mov-tipo" class="font-bold text-on-surface">--</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-outline-variant/15 pb-2.5">
+                    <span class="text-on-surface-variant font-medium">Categoría Imputada:</span>
+                    <span id="det-mov-categoria" class="font-semibold text-on-surface">--</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-outline-variant/15 pb-2.5">
+                    <span class="text-on-surface-variant font-medium">Medio de Flujo:</span>
+                    <span id="det-mov-medio" class="font-semibold text-on-surface">--</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-outline-variant/15 pb-2.5">
+                    <span class="text-on-surface-variant font-medium">Registrado por:</span>
+                    <span id="det-mov-usuario" class="font-semibold text-on-surface">--</span>
+                </div>
+                <div class="pt-1">
+                    <span class="text-on-surface-variant font-medium block mb-1">Descripción / Concepto:</span>
+                    <p id="det-mov-concepto" class="font-bold text-on-surface bg-surface-container-lowest p-3 rounded-lg border border-outline-variant/15">--</p>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center bg-surface-container-low px-4 py-3.5 rounded-xl border border-outline-variant/20">
+                <span class="font-headline font-bold text-sm text-on-surface">Importe Total:</span>
+                <span id="det-mov-monto" class="font-headline font-extrabold text-2xl text-primary">$0</span>
+            </div>
+
+            <button id="btn-aceptar-detalle-mov" class="w-full py-3 rounded-xl bg-primary text-on-primary font-headline font-bold text-sm hover:opacity-95 transition-all cursor-pointer">
+                Cerrar Comprobante
+            </button>
+        </div>
+    </dialog>
+
+    <!-- MODAL 3: Cierre de Caja -->
+    <dialog id="modal-cierre-caja" class="bg-transparent m-auto p-0 backdrop:bg-black/50 backdrop:backdrop-blur-sm transition-all w-full max-w-sm">
         <div class="bg-surface-container-lowest rounded-2xl p-8 shadow-2xl border border-outline-variant/20 flex flex-col gap-6 text-center">
             <span class="material-symbols-outlined text-5xl text-[#93000a] mx-auto">receipt_long</span>
             <div>
                 <h2 class="font-headline font-extrabold text-2xl text-on-surface">Resumen de Jornada</h2>
-                <p class="text-sm text-on-surface-variant mt-1">Revisa los totales antes de cerrar.</p>
+                <p class="text-sm text-on-surface-variant mt-1">Revisa los totales antes de cerrar la caja.</p>
             </div>
             
             <div class="bg-surface-container-low rounded-xl p-5 space-y-3 text-left">
@@ -147,26 +310,34 @@
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-sm font-medium text-on-surface-variant">Ventas Digitales:</span>
-                    <span id="cierre-digitales" class="font-bold text-[#009ee3] text-lg">$0</span>
+                    <span id="cierre-digitales" class="font-bold text-[#1565c0] text-lg">$0</span>
                 </div>
                 <div class="flex justify-between items-center">
-                    <span class="text-sm font-medium text-on-surface-variant">Egresos/Retiros:</span>
+                    <span class="text-sm font-medium text-on-surface-variant">Egresos / Retiros:</span>
                     <span id="cierre-egresos" class="font-bold text-error text-lg">$0</span>
                 </div>
                 <div class="w-full h-px bg-outline-variant/30 my-2"></div>
                 <div class="flex justify-between items-center">
-                    <span class="font-bold text-on-surface">Efectivo a Rendir:</span>
-                    <span id="cierre-balance" class="font-black text-2xl">$0</span>
+                    <span class="font-bold text-on-surface text-sm">Efectivo a Rendir:</span>
+                    <span id="cierre-balance" class="font-extrabold text-xl text-on-surface">$0</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="font-bold text-[#1565c0] text-sm">Plata Virtual a Rendir:</span>
+                    <span id="cierre-balance-digital" class="font-extrabold text-xl text-[#1565c0]">$0</span>
+                </div>
+                <div class="w-full h-px bg-outline-variant/30 my-2"></div>
+                <div class="flex justify-between items-center">
+                    <span class="font-black text-on-surface text-base">Total a Cerrar:</span>
+                    <span id="cierre-total-rendir" class="font-black text-2xl text-[#93000a]">$0</span>
                 </div>
             </div>
 
             <div class="flex gap-3 mt-2">
-                <button id="btn-cancelar-cierre" class="flex-1 py-3 rounded-xl font-headline font-bold text-secondary hover:bg-surface-container-highest transition-colors">Cancelar</button>
-                <button id="btn-confirmar-cierre" class="flex-1 bg-[#93000a] text-on-error py-3 rounded-xl font-headline font-bold hover:bg-[#ba1a1a] transition-all">Confirmar</button>
+                <button id="btn-cancelar-cierre" class="flex-1 py-3 rounded-xl font-headline font-bold text-secondary hover:bg-surface-container-highest transition-colors cursor-pointer">Cancelar</button>
+                <button id="btn-confirmar-cierre" class="flex-1 bg-[#93000a] text-on-error py-3 rounded-xl font-headline font-bold hover:bg-[#ba1a1a] transition-all cursor-pointer">Confirmar</button>
             </div>
         </div>
     </dialog>
 </div>
 
-<div class="h-10"></div>
 <script src="js/controladores/empleado-caja.js"></script>

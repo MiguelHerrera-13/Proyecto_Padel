@@ -1,10 +1,28 @@
 (function() {
     console.log("Controlador de Agenda conectado a API MySQL Iniciado");
 
+    const obtenerHoyIso = () => {
+        if (window.obtenerFechaHoyLocal) return window.obtenerFechaHoyLocal();
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+
     let ticketCarrito = [];
-    let numeroTicket = Math.floor(Math.random() * 1000) + 1000;
-    let fechaActiva = new Date().toISOString().split('T')[0];
-    
+    let numeroTicket = Math.floor(Math.random() * 900) + 100;
+    let fechaActiva = obtenerHoyIso();
+    let canchaFiltro = 0; // 0 = Todas, 1 = Cancha 1, 2 = Cancha 2, 3 = Cancha 3
+    let catalogoCanchas = [
+        { id: 1, nombre: 'Cancha 1', tipo: 'Techada (Blindex)', costo_base: 8500, activa: 1 },
+        { id: 2, nombre: 'Cancha 2', tipo: 'Descubierta (Muro)', costo_base: 7000, activa: 1 },
+        { id: 3, nombre: 'Cancha 3', tipo: 'Techada (Premium)', costo_base: 9500, activa: 1 }
+    ];
+    let senaPorDefecto = 2500;
+
+    if (window.Almacenamiento && window.Almacenamiento.obtenerParametros) {
+        const param = window.Almacenamiento.obtenerParametros();
+        if (param && param.senaFija) senaPorDefecto = parseFloat(param.senaFija);
+    }
+
     const inputFecha = document.getElementById('input-agenda-fecha');
     const labelFechaTexto = document.getElementById('fecha-hoy-txt');
     const btnFechaAnt = document.getElementById('btn-agenda-dia-ant');
@@ -14,38 +32,109 @@
     const contenedorTicket = document.getElementById('ticket-items');
     const labelTotal = document.getElementById('ticket-total');
     const btnCobrar = document.getElementById('btn-cobrar-ticket');
-    
-    if (document.getElementById('ticket-id')) document.getElementById('ticket-id').textContent = `Ticket #${numeroTicket}`;
 
+    if (document.getElementById('ticket-id')) {
+        document.getElementById('ticket-id').textContent = `Ticket #${numeroTicket}`;
+    }
+
+    function obtenerCostoHoraCancha(canchaId) {
+        const c = catalogoCanchas.find(x => parseInt(x.id) === parseInt(canchaId));
+        return c && c.costo_base ? parseFloat(c.costo_base) : 8500;
+    }
+
+    async function cargarCatalogoCanchas() {
+        try {
+            const res = await fetch('../api/canchas.php');
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    catalogoCanchas = data.slice(0, 3);
+                }
+            }
+        } catch (e) {
+            console.warn("Usando catálogo de canchas por defecto:", e);
+        }
+        actualizarCabeceraColumnas();
+        actualizarSelectCanchasModal();
+    }
+
+    function actualizarSelectCanchasModal() {
+        const sel = document.getElementById('agenda-cancha-id');
+        if (!sel) return;
+        const valActual = sel.value || '1';
+        sel.innerHTML = '';
+        catalogoCanchas.forEach((c, idx) => {
+            const num = idx + 1;
+            const enMant = parseInt(c.activa) === 0;
+            sel.innerHTML += `<option value="${c.id}" ${enMant ? 'disabled' : ''}>Cancha ${num} - $${parseFloat(c.costo_base).toLocaleString('es-AR')}/h ${enMant ? '(Mantenimiento)' : ''}</option>`;
+        });
+        sel.value = valActual;
+    }
+
+    // --- RESTRICCIÓN DE CALENDARIO (NUNCA ANTES DE HOY) ---
     function formatearFechaLegible(fechaStr) {
         const partes = fechaStr.split('-');
         const d = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]));
-        const hoyIso = new Date().toISOString().split('T')[0];
+        const hoyIso = obtenerHoyIso();
         const prefijo = (fechaStr === hoyIso) ? "Hoy, " : "";
         return prefijo + d.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' });
     }
 
     function sincronizarControlesFecha() {
-        if (inputFecha) inputFecha.value = fechaActiva;
-        if (labelFechaTexto) labelFechaTexto.textContent = formatearFechaLegible(fechaActiva);
+        const hoyIso = obtenerHoyIso();
+        if (fechaActiva < hoyIso) {
+            fechaActiva = hoyIso;
+        }
+        if (inputFecha) {
+            inputFecha.min = hoyIso;
+            inputFecha.value = fechaActiva;
+        }
+        const agendaFechaModal = document.getElementById('agenda-fecha');
+        if (agendaFechaModal) {
+            agendaFechaModal.min = hoyIso;
+        }
+        if (labelFechaTexto) {
+            labelFechaTexto.textContent = formatearFechaLegible(fechaActiva);
+        }
+        if (btnFechaAnt) {
+            btnFechaAnt.disabled = (fechaActiva <= hoyIso);
+        }
     }
 
     function cambiarFecha(deltaDias) {
+        const hoyIso = obtenerHoyIso();
         const partes = fechaActiva.split('-');
         const d = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]));
         d.setDate(d.getDate() + deltaDias);
         const año = d.getFullYear();
         const mes = String(d.getMonth() + 1).padStart(2, '0');
         const dia = String(d.getDate()).padStart(2, '0');
-        fechaActiva = `${año}-${mes}-${dia}`;
+        const nuevaFecha = `${año}-${mes}-${dia}`;
+
+        if (nuevaFecha < hoyIso) {
+            if (window.mostrarNotificacion) {
+                window.mostrarNotificacion("No se pueden elegir fechas anteriores al día de hoy.", "error");
+            }
+            return;
+        }
+
+        fechaActiva = nuevaFecha;
         sincronizarControlesFecha();
         cargarTurnosGrilla();
     }
 
     if (inputFecha) {
+        inputFecha.min = obtenerHoyIso();
         inputFecha.value = fechaActiva;
         inputFecha.addEventListener('change', () => {
+            const hoyIso = obtenerHoyIso();
             if (inputFecha.value) {
+                if (inputFecha.value < hoyIso) {
+                    inputFecha.value = hoyIso;
+                    if (window.mostrarNotificacion) {
+                        window.mostrarNotificacion("No se permiten fechas anteriores al día de hoy.", "error");
+                    }
+                }
                 fechaActiva = inputFecha.value;
                 sincronizarControlesFecha();
                 cargarTurnosGrilla();
@@ -57,13 +146,70 @@
     if (btnFechaSig) btnFechaSig.addEventListener('click', () => cambiarFecha(1));
     if (btnFechaHoy) {
         btnFechaHoy.addEventListener('click', () => {
-            fechaActiva = new Date().toISOString().split('T')[0];
+            fechaActiva = obtenerHoyIso();
             sincronizarControlesFecha();
             cargarTurnosGrilla();
         });
     }
 
     sincronizarControlesFecha();
+
+    // --- BOTONES FUNCIONALES DE CANCHA 1, 2 Y 3 ---
+    function actualizarCabeceraColumnas() {
+        const cab = document.getElementById('cabecera-columnas-canchas');
+        if (!cab) return;
+        cab.innerHTML = '';
+
+        const canchasAVisualizar = canchaFiltro === 0
+            ? [1, 2, 3]
+            : [canchaFiltro];
+
+        canchasAVisualizar.forEach(num => {
+            const cObj = catalogoCanchas[num - 1] || { id: num, nombre: `Cancha ${num}`, costo_base: 8500, activa: 1 };
+            const enMant = parseInt(cObj.activa) === 0;
+            const div = document.createElement('div');
+            div.className = 'flex-1 text-center flex flex-col items-center justify-center';
+            div.innerHTML = `
+                <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-on-surface">Cancha ${num}</span>
+                    ${enMant
+                        ? `<span class="text-[10px] font-bold bg-[#fff3e0] text-[#e65100] px-1.5 py-0.5 rounded">Mantenimiento</span>`
+                        : `<span class="text-[11px] font-bold text-primary">$${parseFloat(cObj.costo_base).toLocaleString('es-AR')}/h</span>`
+                    }
+                </div>
+            `;
+            cab.appendChild(div);
+        });
+    }
+
+    function aplicarFiltroCancha(nuevaCancha) {
+        // Si toca el mismo botón de cancha individual, vuelve a mostrar todas
+        if (canchaFiltro === nuevaCancha && nuevaCancha !== 0) {
+            canchaFiltro = 0;
+        } else {
+            canchaFiltro = nuevaCancha;
+        }
+
+        document.querySelectorAll('.btn-filtro-cancha').forEach(btn => {
+            const c = parseInt(btn.dataset.cancha || 0);
+            if (c === canchaFiltro) {
+                btn.className = 'btn-filtro-cancha px-3 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer';
+            } else {
+                btn.className = 'btn-filtro-cancha px-3 py-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg text-xs font-bold transition-all cursor-pointer';
+            }
+        });
+
+        actualizarCabeceraColumnas();
+        renderizarGrillaBase();
+        cargarTurnosGrilla();
+    }
+
+    document.querySelectorAll('.btn-filtro-cancha').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const num = parseInt(btn.dataset.cancha || 0);
+            aplicarFiltroCancha(num);
+        });
+    });
 
     // --- 1. MANEJO DEL TICKET / CARRITO ---
     function renderizarTicket() {
@@ -72,7 +218,7 @@
         let total = 0;
 
         if (ticketCarrito.length === 0) {
-            contenedorTicket.innerHTML = '<p class="text-center text-on-surface-variant text-sm mt-10">El ticket está vacío.</p>';
+            contenedorTicket.innerHTML = '<p class="text-center text-on-surface-variant text-xs mt-10">El ticket está vacío. Selecciona productos o envía un turno para cobrar.</p>';
             if (labelTotal) labelTotal.textContent = '$0';
             return;
         }
@@ -80,15 +226,17 @@
         ticketCarrito.forEach((item, index) => {
             total += parseFloat(item.precio);
             contenedorTicket.innerHTML += `
-            <div class="flex justify-between items-center bg-surface-container-low p-3 rounded-xl group relative shadow-sm border border-outline-variant/10">
-                <div>
-                    <p class="font-semibold text-sm text-on-surface">${item.nombre}</p>
-                    <span class="text-[10px] text-secondary font-medium uppercase">${item.tipo}</span>
+            <div class="flex justify-between items-center bg-surface-container-low p-3 rounded-xl group relative border border-outline-variant/15">
+                <div class="pr-3">
+                    <p class="font-bold text-xs text-on-surface">${item.nombre}</p>
+                    <span class="text-[10px] text-on-surface-variant font-semibold uppercase">${item.subtitulo || item.tipo}</span>
                 </div>
-                <span class="font-bold text-sm text-on-surface">$${parseFloat(item.precio).toLocaleString('es-AR')}</span>
-                <button class="absolute -right-2 -top-2 bg-error text-on-error w-7 h-7 rounded-full flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity shadow-md btn-borrar-item cursor-pointer" data-index="${index}" title="Quitar del ticket">
-                    <span class="material-symbols-outlined text-[15px]">close</span>
-                </button>
+                <div class="flex items-center gap-2">
+                    <span class="font-headline font-extrabold text-sm text-on-surface">$${parseFloat(item.precio).toLocaleString('es-AR')}</span>
+                    <button class="text-on-surface-variant hover:text-error p-1 rounded-lg hover:bg-error-container/20 transition-colors btn-borrar-item cursor-pointer" data-index="${index}" title="Quitar del ticket">
+                        <span class="material-symbols-outlined text-[16px]">close</span>
+                    </button>
+                </div>
             </div>`;
         });
 
@@ -137,19 +285,19 @@
 
                 const agotado = parseInt(p.stock_actual) <= 0;
                 const btn = document.createElement('button');
-                btn.className = `flex flex-col items-center justify-center p-2.5 rounded-xl transition-all gap-1.5 relative border border-outline-variant/10 shadow-sm ${
+                btn.className = `flex flex-col items-center justify-center p-2.5 rounded-xl transition-all gap-1 relative border border-outline-variant/15 ${
                     agotado 
                     ? 'bg-surface-container/50 opacity-50 cursor-not-allowed' 
-                    : 'bg-surface-container-low hover:bg-surface-container active:scale-95 cursor-pointer hover:shadow-md'
+                    : 'bg-surface-container-low hover:bg-surface-container active:scale-95 cursor-pointer hover:shadow-sm'
                 }`;
                 btn.dataset.id = p.id;
                 btn.dataset.nombre = p.nombre;
                 btn.dataset.precio = p.precio_venta;
 
                 btn.innerHTML = `
-                    <span class="material-symbols-outlined text-primary text-xl" style="font-variation-settings: 'FILL' 1;">${icono}</span>
+                    <span class="material-symbols-outlined text-primary text-xl">${icono}</span>
                     <span class="text-[11px] font-bold text-on-surface line-clamp-1 text-center">${p.nombre}</span>
-                    <span class="text-[10px] font-semibold text-primary font-headline">$${parseFloat(p.precio_venta).toLocaleString('es-AR')}</span>
+                    <span class="text-[11px] font-extrabold text-primary font-headline">$${parseFloat(p.precio_venta).toLocaleString('es-AR')}</span>
                     ${agotado ? '<span class="text-[8px] bg-error/20 text-error px-1 rounded absolute top-1 right-1 font-bold">Sin Stock</span>' : ''}
                 `;
 
@@ -159,7 +307,8 @@
                             id: p.id,
                             nombre: p.nombre,
                             precio: parseFloat(p.precio_venta),
-                            tipo: 'PRODUCTO'
+                            tipo: 'PRODUCTO',
+                            subtitulo: 'Mostrador'
                         });
                         renderizarTicket();
                     });
@@ -168,7 +317,6 @@
             });
 
         } catch (err) {
-            console.warn("Fallo al cargar productos dinámicos, usando fallback:", err);
             renderizarVentaRapidaFallback(contenedor);
         }
     }
@@ -183,18 +331,19 @@
         contenedor.innerHTML = '';
         fallbacks.forEach(f => {
             const btn = document.createElement('button');
-            btn.className = "flex flex-col items-center justify-center p-3 rounded-xl bg-surface-container-low hover:bg-surface-container transition-all gap-1.5 cursor-pointer shadow-sm border border-outline-variant/10";
+            btn.className = "flex flex-col items-center justify-center p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container transition-all gap-1 cursor-pointer border border-outline-variant/15";
             btn.innerHTML = `
-                <span class="material-symbols-outlined text-primary text-2xl" style="font-variation-settings: 'FILL' 1;">${f.icono}</span>
-                <span class="text-xs font-semibold text-on-surface-variant">${f.nombre}</span>
-                <span class="text-[10px] font-bold text-primary font-headline">$${f.precio}</span>
+                <span class="material-symbols-outlined text-primary text-xl">${f.icono}</span>
+                <span class="text-[11px] font-bold text-on-surface">${f.nombre}</span>
+                <span class="text-[11px] font-extrabold text-primary font-headline">$${f.precio.toLocaleString('es-AR')}</span>
             `;
             btn.addEventListener('click', () => {
                 ticketCarrito.push({
                     id: f.id,
                     nombre: f.nombre,
                     precio: f.precio,
-                    tipo: 'PRODUCTO'
+                    tipo: 'PRODUCTO',
+                    subtitulo: 'Mostrador'
                 });
                 renderizarTicket();
             });
@@ -211,18 +360,16 @@
             }
 
             btnCobrar.disabled = true;
-            btnCobrar.textContent = "Procesando...";
+            btnCobrar.textContent = "Procesando cobro...";
 
             let totalCobrado = 0;
             const conceptosItems = [];
 
             try {
-                // 1. Procesar cada item
                 for (const item of ticketCarrito) {
                     totalCobrado += item.precio;
                     conceptosItems.push(item.nombre);
 
-                    // Si es producto, descontar stock en MySQL
                     if (item.tipo === 'PRODUCTO' && item.id) {
                         try {
                             const resProd = await fetch(`../api/stock.php?id=${item.id}`);
@@ -237,17 +384,16 @@
                                 });
                             }
                         } catch (errStock) {
-                            console.warn("No se pudo descontar stock de producto:", errStock);
+                            console.warn("No se pudo descontar stock:", errStock);
                         }
                     }
 
-                    // Si es turno, marcarlo como PAGADO en MySQL
                     if (item.tipo === 'TURNO' && item.turnoId) {
                         try {
                             await fetch('../api/turnos.php', {
                                 method: 'PUT',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ id: item.turnoId, estado_pago: 'PAGADO' })
+                                body: JSON.stringify({ id: item.turnoId, estado_pago: item.nuevoEstadoPago || 'PAGADO' })
                             });
                         } catch (errTurno) {
                             console.warn("No se pudo actualizar estado de pago del turno:", errTurno);
@@ -255,15 +401,10 @@
                     }
                 }
 
-                // 2. Registrar el ingreso en la Caja de MySQL
                 let usuarioId = 1;
-                let usuarioNombre = 'Empleado';
                 if (window.Almacenamiento && window.Almacenamiento.obtenerUsuarioLogueado) {
                     const u = window.Almacenamiento.obtenerUsuarioLogueado();
-                    if (u) {
-                        usuarioId = u.id || 1;
-                        usuarioNombre = u.nombre || 'Empleado';
-                    }
+                    if (u && u.id) usuarioId = u.id;
                 }
 
                 await fetch('../api/caja.php', {
@@ -272,13 +413,13 @@
                     body: JSON.stringify({
                         usuario_id: usuarioId,
                         tipo: 'INGRESO',
-                        concepto: `Cobro Ticket #${numeroTicket} (${ticketCarrito.length} items: ${conceptosItems.slice(0, 3).join(', ')})`,
+                        concepto: `Cobro Ticket #${numeroTicket} (${conceptosItems.slice(0, 3).join(', ')})`,
                         monto: totalCobrado
                     })
                 });
 
                 if (window.mostrarNotificacion) {
-                    window.mostrarNotificacion(`Ticket #${numeroTicket} cobrado. Ingreso registrado: $${totalCobrado.toLocaleString('es-AR')}`);
+                    window.mostrarNotificacion(`Ticket #${numeroTicket} cobrado exitosamente ($${totalCobrado.toLocaleString('es-AR')}).`);
                 }
 
                 ticketCarrito = [];
@@ -288,13 +429,14 @@
                 }
                 renderizarTicket();
                 await cargarTurnosGrilla();
+                await cargarProductosVentaRapida();
 
             } catch (error) {
                 console.error("Error al cobrar ticket:", error);
-                if (window.mostrarNotificacion) window.mostrarNotificacion("Error al procesar el cobro en el servidor.", "error");
+                if (window.mostrarNotificacion) window.mostrarNotificacion("Error al procesar el cobro.", "error");
             } finally {
                 btnCobrar.disabled = false;
-                btnCobrar.textContent = "Cobrar e Imprimir Ticket";
+                btnCobrar.innerHTML = `<span class="material-symbols-outlined text-[20px]">point_of_sale</span> Cobrar Total e Impactar en Caja`;
             }
         });
     }
@@ -316,7 +458,7 @@
 
         for (let i = horaInicio; i <= horaFin; i++) {
             const hDiv = document.createElement('div');
-            hDiv.className = 'h-20 text-xs text-on-surface-variant/60 font-label text-right pr-2 pt-2';
+            hDiv.className = 'h-20 text-[11px] font-bold text-on-surface-variant/70 text-right pr-3 pt-1.5';
             hDiv.textContent = `${i.toString().padStart(2, '0')}:00`;
             columnaHoras.appendChild(hDiv);
 
@@ -327,20 +469,22 @@
         }
 
         colContainer.innerHTML = '';
-        for (let c = 1; c <= 3; c++) {
+        const canchasAVisualizar = canchaFiltro === 0 ? [1, 2, 3] : [canchaFiltro];
+
+        canchasAVisualizar.forEach(c => {
             const col = document.createElement('div');
-            col.className = `flex-1 relative border-r border-outline-variant/10 columna-cancha cursor-pointer hover:bg-surface-container-lowest/40 transition-colors`;
+            col.className = `flex-1 relative border-r border-outline-variant/15 columna-cancha cursor-pointer hover:bg-primary/[0.02] transition-colors`;
             col.dataset.cancha = c;
             
             col.addEventListener('click', (e) => {
                 if (e.target === col) {
                     const y = e.clientY - col.getBoundingClientRect().top;
-                    const horaClic = horaInicio + Math.floor(y / pxPorHora);
+                    const horaClic = Math.min(horaFin, Math.max(horaInicio, horaInicio + Math.floor(y / pxPorHora)));
                     abrirModalAgenda(c, `${horaClic.toString().padStart(2, '0')}:00`);
                 }
             });
             colContainer.appendChild(col);
-        }
+        });
     }
 
     // Cargar turnos desde MySQL
@@ -350,67 +494,72 @@
             if (!res.ok) throw new Error("Error al obtener turnos");
             const todosLosTurnos = await res.json();
 
-            // Filtrar los que no están cancelados ni finalizados
             const turnosVisibles = todosLosTurnos.filter(t => t.estado !== 'FINALIZADO' && t.estado !== 'CANCELADO');
             const columnas = document.querySelectorAll('.columna-cancha');
             columnas.forEach(col => col.innerHTML = '');
 
             turnosVisibles.forEach(t => {
+                const canchaId = parseInt(t.cancha_id || t.canchaId || 1);
+                if (canchaFiltro !== 0 && canchaId !== canchaFiltro) return;
+
+                const col = Array.from(columnas).find(colEl => parseInt(colEl.dataset.cancha) === canchaId);
+                if (!col) return;
+
                 const horaStr = t.hora_inicio || t.horaInicio || '18:00';
                 const [h, m] = horaStr.split(':').map(Number);
                 const duracionMin = parseInt(t.duracion || 60);
                 const topPx = (((h - horaInicio) * 60 + m) / 60) * pxPorHora;
                 const altoPx = (duracionMin / 60) * pxPorHora;
 
-                const canchaId = parseInt(t.cancha_id || t.canchaId || 1);
-                const col = columnas[canchaId - 1];
-                if (!col) return;
+                const costoHora = parseFloat(t.cancha_costo_base || obtenerCostoHoraCancha(canchaId));
+                const montoTotal = parseFloat(t.monto_total || 0) > 0 ? parseFloat(t.monto_total) : (duracionMin / 60) * costoHora;
+                const montoSena = Math.min(senaPorDefecto, montoTotal);
+                const saldoRestante = Math.max(0, montoTotal - montoSena);
 
-                const estadoPago = t.estado_pago || t.estadoPago || 'NO_PAGO';
+                const estadoPago = t.estado_pago || t.estadoPago || 'PENDIENTE';
                 let badgeHTML, bgClass, borderClass, textClass, leftBarClass;
 
                 if (estadoPago === 'PAGADO') {
-                    bgClass = 'bg-[#e8f5e9]/95 hover:bg-[#c8e6c9]';
+                    bgClass = 'bg-[#e8f5e9] hover:bg-[#c8e6c9]';
                     borderClass = 'border-[#4caf50]/40';
                     textClass = 'text-[#2e7d32]';
                     leftBarClass = 'bg-[#4caf50]';
-                    badgeHTML = `<span class="inline-block mt-1 ml-2 px-1.5 py-0.5 bg-[#4caf50]/20 text-[#2e7d32] text-[9px] font-bold rounded uppercase">TOTAL PAGADO</span>`;
+                    badgeHTML = `<span class="inline-block mt-1 ml-2 px-2 py-0.5 bg-[#4caf50]/20 text-[#2e7d32] text-[10px] font-extrabold rounded-md uppercase">PAGADO ($${montoTotal.toLocaleString('es-AR')})</span>`;
                 } else if (estadoPago === 'SENA') {
-                    bgClass = 'bg-[#e3f2fd]/95 hover:bg-[#bbdefb]';
+                    bgClass = 'bg-[#e3f2fd] hover:bg-[#bbdefb]';
                     borderClass = 'border-[#2196f3]/40';
                     textClass = 'text-[#1565c0]';
                     leftBarClass = 'bg-[#2196f3]';
-                    badgeHTML = `<span class="inline-block mt-1 ml-2 px-1.5 py-0.5 bg-[#2196f3]/20 text-[#1565c0] text-[9px] font-bold rounded uppercase">SEÑA PAGADA</span>`;
+                    badgeHTML = `<span class="inline-block mt-1 ml-2 px-2 py-0.5 bg-[#2196f3]/20 text-[#1565c0] text-[10px] font-extrabold rounded-md uppercase">SEÑA $${montoSena.toLocaleString('es-AR')} • FALTA $${saldoRestante.toLocaleString('es-AR')}</span>`;
                 } else {
-                    bgClass = 'bg-[#fff3e0]/95 hover:bg-[#ffe0b2]';
+                    bgClass = 'bg-[#fff3e0] hover:bg-[#ffe0b2]';
                     borderClass = 'border-[#ffb74d]/40';
                     textClass = 'text-[#e65100]';
                     leftBarClass = 'bg-[#ff9800]';
-                    badgeHTML = `<span class="inline-block mt-1 ml-2 px-1.5 py-0.5 bg-[#ffb74d]/20 text-[#e65100] text-[9px] font-bold rounded uppercase">PENDIENTE PAGO</span>`;
+                    badgeHTML = `<span class="inline-block mt-1 ml-2 px-2 py-0.5 bg-[#ffb74d]/20 text-[#e65100] text-[10px] font-extrabold rounded-md uppercase">A PAGAR: $${montoTotal.toLocaleString('es-AR')}</span>`;
                 }
 
                 const clienteNombre = t.cliente_nombre || t.clienteNombre || 'Socio';
                 const horaCorta = horaStr.substring(0, 5);
 
                 const block = document.createElement('div');
-                block.className = `absolute w-[95%] left-[2.5%] ${bgClass} rounded-xl p-2 transition-all cursor-pointer border ${borderClass} shadow-sm z-20 overflow-hidden hover:scale-[1.02] hover:shadow-md`;
+                block.className = `absolute w-[95%] left-[2.5%] ${bgClass} rounded-xl p-2.5 transition-all cursor-pointer border ${borderClass} shadow-sm z-20 overflow-hidden hover:shadow-md`;
                 block.style.top = `${topPx}px`;
                 block.style.height = `${altoPx}px`;
 
                 block.innerHTML = `
                     <div class="w-1.5 h-full absolute left-0 top-0 ${leftBarClass} rounded-l-xl"></div>
-                    <h4 class="font-headline font-bold text-sm ${textClass} ml-2 truncate">${clienteNombre}</h4>
-                    <p class="text-[10px] text-on-surface-variant font-label ml-2">${horaCorta} hs (${duracionMin} min)</p>
+                    <div class="flex justify-between items-start ml-2">
+                        <h4 class="font-headline font-bold text-xs sm:text-sm ${textClass} truncate">${clienteNombre}</h4>
+                        <span class="text-[10px] font-bold text-on-surface-variant ml-1">C${canchaId}</span>
+                    </div>
+                    <p class="text-[11px] text-on-surface-variant font-medium ml-2">${horaCorta} hs (${duracionMin} min)</p>
                     ${badgeHTML}
                 `;
 
-                // Clic para abrir el modal de opciones del turno
                 block.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    turnoActivoParaOpciones = t;
-                    const tit = document.getElementById('opciones-turno-titulo');
-                    if (tit) tit.textContent = `Turno: ${clienteNombre} (Cancha ${canchaId})`;
-                    if (modalOpciones) modalOpciones.showModal();
+                    abrirModalOpcionesTurno(t, montoTotal, montoSena);
                 });
 
                 col.appendChild(block);
@@ -422,39 +571,87 @@
 
     // --- 3. MODAL DE GESTIÓN DEL TURNO CLICKEADO ---
     const modalOpciones = document.getElementById('modal-opciones-turno');
-    
+
+    function abrirModalOpcionesTurno(t, montoTotal, montoSena) {
+        turnoActivoParaOpciones = t;
+        if (!modalOpciones) return;
+
+        const canchaId = t.cancha_id || 1;
+        const dur = parseInt(t.duracion || 60);
+        const horaCorta = (t.hora_inicio || '').substring(0, 5);
+        const estadoPago = t.estado_pago || 'PENDIENTE';
+
+        const tit = document.getElementById('opciones-turno-titulo');
+        const sub = document.getElementById('opciones-turno-subtitulo');
+        if (tit) tit.textContent = `${t.cliente_nombre || 'Socio'} • Cancha ${canchaId}`;
+        if (sub) sub.textContent = `Horario: ${horaCorta} hs (${dur} min) • Fecha: ${t.fecha.split('-').reverse().join('/')}`;
+
+        const elTotal = document.getElementById('op-turno-total');
+        const elSena = document.getElementById('op-turno-sena');
+        const elSaldo = document.getElementById('op-turno-saldo');
+        const elLabelSaldo = document.getElementById('op-label-a-pagar');
+        const btnSenaTxt = document.getElementById('btn-sena-monto-txt');
+        const txtBtnEnviar = document.getElementById('txt-btn-enviar-cancha');
+
+        if (elTotal) elTotal.textContent = `$${montoTotal.toLocaleString('es-AR')}`;
+        if (elSena) elSena.textContent = `$${montoSena.toLocaleString('es-AR')}`;
+        if (btnSenaTxt) btnSenaTxt.textContent = `$${montoSena.toLocaleString('es-AR')}`;
+
+        if (estadoPago === 'PAGADO') {
+            if (elLabelSaldo) elLabelSaldo.textContent = 'Estado de Cuenta:';
+            if (elSaldo) {
+                elSaldo.textContent = 'TOTAL ABONADO ($0)';
+                elSaldo.className = 'font-headline font-extrabold text-sm text-[#2e7d32]';
+            }
+            if (txtBtnEnviar) txtBtnEnviar.textContent = `Cancha ya abonada ($${montoTotal.toLocaleString('es-AR')})`;
+        } else if (estadoPago === 'SENA') {
+            const resto = Math.max(0, montoTotal - montoSena);
+            if (elLabelSaldo) elLabelSaldo.textContent = 'Resta Pagar (Total - Seña):';
+            if (elSaldo) {
+                elSaldo.textContent = `$${resto.toLocaleString('es-AR')}`;
+                elSaldo.className = 'font-headline font-extrabold text-base text-[#1565c0]';
+            }
+            if (txtBtnEnviar) txtBtnEnviar.textContent = `Enviar Saldo Restante al Ticket ($${resto.toLocaleString('es-AR')})`;
+        } else {
+            if (elLabelSaldo) elLabelSaldo.textContent = 'Total a Pagar (Sin Seña):';
+            if (elSaldo) {
+                elSaldo.textContent = `$${montoTotal.toLocaleString('es-AR')}`;
+                elSaldo.className = 'font-headline font-extrabold text-base text-[#e65100]';
+            }
+            if (txtBtnEnviar) txtBtnEnviar.textContent = `Enviar Total Cancha al Ticket ($${montoTotal.toLocaleString('es-AR')})`;
+        }
+
+        modalOpciones.showModal();
+    }
+
     if (modalOpciones) {
         const btnCerrarOp = document.getElementById('btn-cerrar-opciones');
         if (btnCerrarOp) btnCerrarOp.onclick = () => modalOpciones.close();
 
-        // Eliminar Turno en MySQL
         const btnEliminarTurno = document.getElementById('btn-eliminar-turno-modal');
         if (btnEliminarTurno) {
             btnEliminarTurno.onclick = async () => {
                 if (!turnoActivoParaOpciones) return;
-                if (confirm(`¿Seguro que deseas cancelar y borrar este turno de ${turnoActivoParaOpciones.cliente_nombre || turnoActivoParaOpciones.clienteNombre}?`)) {
+                if (confirm(`¿Seguro que deseas cancelar y borrar este turno de ${turnoActivoParaOpciones.cliente_nombre || 'este socio'}?`)) {
                     try {
                         const res = await fetch(`../api/turnos.php?id=${turnoActivoParaOpciones.id}`, { method: 'DELETE' });
                         if (res.ok) {
                             modalOpciones.close();
+                            if (window.mostrarNotificacion) window.mostrarNotificacion("Turno cancelado y liberado.");
                             await cargarTurnosGrilla();
-                        } else {
-                            const err = await res.json();
-                            alert(err.error || "Error al eliminar turno.");
                         }
                     } catch (e) {
-                        alert("Error de conexión al eliminar turno.");
+                        if (window.mostrarNotificacion) window.mostrarNotificacion("Error al eliminar turno.", "error");
                     }
                 }
             };
         }
 
-        // Finalizar Turno
         const btnFinalizar = document.getElementById('btn-finalizar-turno-modal');
         if (btnFinalizar) {
             btnFinalizar.addEventListener('click', async () => {
                 if (!turnoActivoParaOpciones) return;
-                if (confirm("¿Los jugadores ya finalizaron? El turno se marcará como COMPLETADO.")) {
+                if (confirm("¿Los jugadores ya finalizaron el partido? La cancha quedará liberada.")) {
                     try {
                         await fetch('../api/turnos.php', {
                             method: 'PUT',
@@ -462,19 +659,27 @@
                             body: JSON.stringify({ id: turnoActivoParaOpciones.id, estado: 'FINALIZADO' })
                         });
                         modalOpciones.close();
+                        if (window.mostrarNotificacion) window.mostrarNotificacion("Partido finalizado correctamente.");
                         await cargarTurnosGrilla();
                     } catch (e) {
-                        alert("Error de conexión al finalizar turno.");
+                        if (window.mostrarNotificacion) window.mostrarNotificacion("Error al finalizar turno.", "error");
                     }
                 }
             });
         }
 
-        // Cambiar Estado de Pago en MySQL (NO_PAGO, SENA, PAGADO)
+        // Cambiar Estado de Pago en MySQL (PENDIENTE, SENA, PAGADO)
         document.querySelectorAll('.btn-cambiar-estado-turno').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 if (!turnoActivoParaOpciones) return;
                 const nuevoEstadoPago = e.currentTarget.dataset.estado;
+                const dur = parseInt(turnoActivoParaOpciones.duracion || 60);
+                const canchaId = turnoActivoParaOpciones.cancha_id || 1;
+                const costoHora = parseFloat(turnoActivoParaOpciones.cancha_costo_base || obtenerCostoHoraCancha(canchaId));
+                const montoTotal = parseFloat(turnoActivoParaOpciones.monto_total || 0) > 0
+                    ? parseFloat(turnoActivoParaOpciones.monto_total)
+                    : (dur / 60) * costoHora;
+                const montoSena = Math.min(senaPorDefecto, montoTotal);
 
                 try {
                     await fetch('../api/turnos.php', {
@@ -482,10 +687,27 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ id: turnoActivoParaOpciones.id, estado_pago: nuevoEstadoPago })
                     });
-                    modalOpciones.close();
+
+                    // Si eligen SEÑA, mostrar el precio de la seña y agregarla al ticket si aún no estaba señado
+                    if (nuevoEstadoPago === 'SENA') {
+                        if (window.mostrarNotificacion) {
+                            window.mostrarNotificacion(`Seña seleccionada: Debe abonar $${montoSena.toLocaleString('es-AR')} (Restan $${(montoTotal - montoSena).toLocaleString('es-AR')}).`);
+                        }
+                    } else if (nuevoEstadoPago === 'PAGADO') {
+                        if (window.mostrarNotificacion) {
+                            window.mostrarNotificacion(`Turno marcado como Total Pagado ($${montoTotal.toLocaleString('es-AR')}).`);
+                        }
+                    } else {
+                        if (window.mostrarNotificacion) {
+                            window.mostrarNotificacion(`Turno marcado como Pendiente de Pago ($${montoTotal.toLocaleString('es-AR')}).`);
+                        }
+                    }
+
+                    turnoActivoParaOpciones.estado_pago = nuevoEstadoPago;
+                    abrirModalOpcionesTurno(turnoActivoParaOpciones, montoTotal, montoSena);
                     await cargarTurnosGrilla();
                 } catch (e) {
-                    alert("Error de conexión al cambiar estado de pago.");
+                    if (window.mostrarNotificacion) window.mostrarNotificacion("Error al cambiar estado de pago.", "error");
                 }
             });
         });
@@ -496,26 +718,47 @@
                 if (!turnoActivoParaOpciones) return;
                 const cur = e.currentTarget;
                 const dur = parseInt(turnoActivoParaOpciones.duracion || 60);
-                const canchaId = turnoActivoParaOpciones.cancha_id || turnoActivoParaOpciones.canchaId || 1;
+                const canchaId = turnoActivoParaOpciones.cancha_id || 1;
+                const costoBase = parseFloat(turnoActivoParaOpciones.cancha_costo_base || obtenerCostoHoraCancha(canchaId));
+                const precioTotalCancha = parseFloat(turnoActivoParaOpciones.monto_total || 0) > 0
+                    ? parseFloat(turnoActivoParaOpciones.monto_total)
+                    : (dur / 60) * costoBase;
 
                 if (cur.dataset.tipo === 'cancha') {
-                    // Cálculo de tarifa
-                    const costoBase = parseFloat(turnoActivoParaOpciones.cancha_costo_base || 8500);
-                    const precioCancha = (dur / 60) * costoBase;
+                    const estadoPago = turnoActivoParaOpciones.estado_pago || 'PENDIENTE';
+                    const montoSena = Math.min(senaPorDefecto, precioTotalCancha);
+                    const precioACobrar = estadoPago === 'SENA'
+                        ? Math.max(0, precioTotalCancha - montoSena)
+                        : precioTotalCancha;
+
+                    const etiqueta = estadoPago === 'SENA'
+                        ? `Saldo Cancha ${canchaId} (${dur}m - Seña descontada)`
+                        : `Alquiler Cancha ${canchaId} (${dur}m)`;
+
                     ticketCarrito.push({
                         id: `cancha-${canchaId}`,
                         turnoId: turnoActivoParaOpciones.id,
-                        nombre: `Alquiler Cancha ${canchaId} (${dur}m)`,
-                        precio: precioCancha,
-                        tipo: 'TURNO'
+                        nombre: etiqueta,
+                        precio: precioACobrar,
+                        tipo: 'TURNO',
+                        nuevoEstadoPago: 'PAGADO',
+                        subtitulo: `Socio: ${turnoActivoParaOpciones.cliente_nombre || 'Club'}`
                     });
+                    modalOpciones.close();
+                    if (window.mostrarNotificacion) {
+                        window.mostrarNotificacion(`Agregado al ticket: $${precioACobrar.toLocaleString('es-AR')}`);
+                    }
                 } else {
                     ticketCarrito.push({
                         id: cur.dataset.id,
                         nombre: cur.dataset.nombre,
                         precio: parseFloat(cur.dataset.precio),
-                        tipo: 'PRODUCTO'
+                        tipo: 'PRODUCTO',
+                        subtitulo: `Consumo Cancha ${canchaId}`
                     });
+                    if (window.mostrarNotificacion) {
+                        window.mostrarNotificacion(`${cur.dataset.nombre} agregado al ticket.`);
+                    }
                 }
                 
                 renderizarTicket();
@@ -523,23 +766,88 @@
         });
     }
 
-    // --- 4. MODAL CREAR NUEVO TURNO DESDE LA AGENCIA ---
+    // --- 4. MODAL CREAR NUEVO TURNO Y CÁLCULO DE SEÑA EN VIVO ---
     const modalAgenda = document.getElementById('modal-agenda');
     const formAgenda = document.getElementById('form-agenda');
     const btnAbrirModalTop = document.getElementById('btn-abrir-modal-turno');
 
+    const selAgendaCancha = document.getElementById('agenda-cancha-id');
+    const selAgendaDuracion = document.getElementById('agenda-duracion');
+    const selAgendaPago = document.getElementById('agenda-pago');
+    const inputAgendaMontoSena = document.getElementById('agenda-monto-sena');
+
+    function actualizarResumenPrecioNuevoTurno() {
+        const canchaId = selAgendaCancha ? parseInt(selAgendaCancha.value || 1) : 1;
+        const duracion = selAgendaDuracion ? parseInt(selAgendaDuracion.value || 90) : 90;
+        const estadoPago = selAgendaPago ? selAgendaPago.value : 'PENDIENTE';
+
+        const costoHora = obtenerCostoHoraCancha(canchaId);
+        const precioTotal = Math.round((duracion / 60) * costoHora);
+        const senaIngresada = inputAgendaMontoSena ? parseFloat(inputAgendaMontoSena.value || senaPorDefecto) : senaPorDefecto;
+        const montoSenaEfectivo = Math.min(Math.max(0, senaIngresada), precioTotal);
+        const saldoRestante = Math.max(0, precioTotal - montoSenaEfectivo);
+
+        const elPrecioTotal = document.getElementById('agenda-precio-total-txt');
+        const bloqueSena = document.getElementById('bloque-detalle-sena-agenda');
+        const bloqueGeneral = document.getElementById('bloque-detalle-general-agenda');
+        const elSaldoRestante = document.getElementById('agenda-saldo-restante-txt');
+        const elLabelCobroAhora = document.getElementById('agenda-label-cobro-ahora');
+        const elMontoAhora = document.getElementById('agenda-monto-ahora-txt');
+
+        if (elPrecioTotal) elPrecioTotal.textContent = `$${precioTotal.toLocaleString('es-AR')}`;
+
+        if (estadoPago === 'SENA') {
+            if (bloqueSena) bloqueSena.classList.remove('hidden');
+            if (bloqueGeneral) bloqueGeneral.classList.add('hidden');
+            if (elSaldoRestante) elSaldoRestante.textContent = `$${saldoRestante.toLocaleString('es-AR')}`;
+        } else if (estadoPago === 'PAGADO') {
+            if (bloqueSena) bloqueSena.classList.add('hidden');
+            if (bloqueGeneral) bloqueGeneral.classList.remove('hidden');
+            if (elLabelCobroAhora) elLabelCobroAhora.textContent = 'Total a Cobrar Ahora:';
+            if (elMontoAhora) {
+                elMontoAhora.textContent = `$${precioTotal.toLocaleString('es-AR')}`;
+                elMontoAhora.className = 'font-headline font-extrabold text-base text-[#2e7d32]';
+            }
+        } else {
+            if (bloqueSena) bloqueSena.classList.add('hidden');
+            if (bloqueGeneral) bloqueGeneral.classList.remove('hidden');
+            if (elLabelCobroAhora) elLabelCobroAhora.textContent = 'Queda Pendiente de Pago:';
+            if (elMontoAhora) {
+                elMontoAhora.textContent = `$${precioTotal.toLocaleString('es-AR')}`;
+                elMontoAhora.className = 'font-headline font-extrabold text-base text-[#e65100]';
+            }
+        }
+    }
+
+    if (selAgendaCancha) selAgendaCancha.addEventListener('change', actualizarResumenPrecioNuevoTurno);
+    if (selAgendaDuracion) selAgendaDuracion.addEventListener('change', actualizarResumenPrecioNuevoTurno);
+    if (selAgendaPago) selAgendaPago.addEventListener('change', actualizarResumenPrecioNuevoTurno);
+    if (inputAgendaMontoSena) inputAgendaMontoSena.addEventListener('input', actualizarResumenPrecioNuevoTurno);
+
     if (btnAbrirModalTop) {
-        btnAbrirModalTop.addEventListener('click', () => abrirModalAgenda(1, "18:00"));
+        btnAbrirModalTop.addEventListener('click', () => {
+            const canchaInicial = canchaFiltro !== 0 ? canchaFiltro : 1;
+            abrirModalAgenda(canchaInicial, "18:00");
+        });
     }
 
     async function abrirModalAgenda(canchaId, horaStr) {
         if (!modalAgenda) return;
-        document.getElementById('agenda-cancha-id').value = canchaId;
+        const hoyIso = obtenerHoyIso();
+        if (fechaActiva < hoyIso) fechaActiva = hoyIso;
+
+        if (selAgendaCancha) selAgendaCancha.value = canchaId;
         document.getElementById('agenda-hora').value = horaStr;
-        document.getElementById('agenda-fecha').value = fechaActiva;
+        const inputFechaModal = document.getElementById('agenda-fecha');
+        if (inputFechaModal) {
+            inputFechaModal.min = hoyIso;
+            inputFechaModal.value = fechaActiva;
+        }
         document.getElementById('agenda-cliente').value = '';
+        if (inputAgendaMontoSena) inputAgendaMontoSena.value = senaPorDefecto;
+
+        actualizarResumenPrecioNuevoTurno();
         
-        // Cargar socios registrados de la base de datos para el datalist
         const datalist = document.getElementById('lista-clientes-agenda');
         if (datalist) {
             datalist.innerHTML = '';
@@ -552,102 +860,146 @@
                     });
                 }
             } catch (e) {
-                console.warn("No se pudieron cargar usuarios para autocompletar:", e);
+                console.warn("No se pudieron cargar usuarios:", e);
             }
         }
         modalAgenda.showModal();
     }
 
-    if (document.getElementById('btn-cancelar-agenda')) {
-        document.getElementById('btn-cancelar-agenda').onclick = () => modalAgenda.close();
-    }
+    const cerrarModalAgenda = () => { if (modalAgenda) modalAgenda.close(); };
+    if (document.getElementById('btn-cancelar-agenda')) document.getElementById('btn-cancelar-agenda').onclick = cerrarModalAgenda;
+    if (document.getElementById('btn-cerrar-agenda-x')) document.getElementById('btn-cerrar-agenda-x').onclick = cerrarModalAgenda;
 
     if (formAgenda) {
-        const btnSubmit = formAgenda.querySelector('button[type="submit"]');
-        if (btnSubmit) {
-            btnSubmit.type = 'button'; 
-            btnSubmit.addEventListener('click', async () => {
-                const clienteNombre = document.getElementById('agenda-cliente').value.trim();
-                const horaForm = document.getElementById('agenda-hora').value;
-                const canchaId = parseInt(document.getElementById('agenda-cancha-id').value);
-                const fechaForm = document.getElementById('agenda-fecha').value;
-                const duracionForm = parseInt(document.getElementById('agenda-duracion').value);
-                const pagoForm = document.getElementById('agenda-pago').value;
-                
-                if (!clienteNombre) {
-                    alert("⚠️ Por favor, ingresá el nombre del cliente o socio en el cuadro de texto.");
-                    return;
-                }
+        formAgenda.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const hoyIso = obtenerHoyIso();
+            const clienteNombre = document.getElementById('agenda-cliente').value.trim();
+            const horaForm = document.getElementById('agenda-hora').value;
+            const canchaId = parseInt(document.getElementById('agenda-cancha-id').value);
+            const fechaForm = document.getElementById('agenda-fecha').value;
+            const duracionForm = parseInt(document.getElementById('agenda-duracion').value);
+            const pagoForm = document.getElementById('agenda-pago').value;
+            
+            if (!clienteNombre) {
+                if (window.mostrarNotificacion) window.mostrarNotificacion("Ingresa el nombre del socio o cliente.", "error");
+                return;
+            }
 
-                // Buscar si coincide con un cliente registrado
-                let clienteId = null;
-                const datalist = document.getElementById('lista-clientes-agenda');
-                if (datalist) {
-                    const opt = Array.from(datalist.options).find(o => o.value.toLowerCase() === clienteNombre.toLowerCase());
-                    if (opt && opt.dataset.id) clienteId = parseInt(opt.dataset.id);
-                }
+            if (fechaForm < hoyIso) {
+                if (window.mostrarNotificacion) window.mostrarNotificacion("No puedes agendar turnos en fechas pasadas.", "error");
+                return;
+            }
 
-                const payload = {
-                    cancha_id: canchaId,
-                    fecha: fechaForm,
-                    hora_inicio: horaForm,
-                    duracion: duracionForm,
-                    cliente_nombre: clienteNombre,
-                    cliente_id: clienteId,
-                    estado_pago: pagoForm,
-                    estado: 'CONFIRMADO',
-                    monto_total: (duracionForm / 60) * 8500
-                };
+            let clienteId = null;
+            const datalist = document.getElementById('lista-clientes-agenda');
+            if (datalist) {
+                const opt = Array.from(datalist.options).find(o => o.value.toLowerCase() === clienteNombre.toLowerCase());
+                if (opt && opt.dataset.id) clienteId = parseInt(opt.dataset.id);
+            }
 
+            const costoHora = obtenerCostoHoraCancha(canchaId);
+            const montoTotal = Math.round((duracionForm / 60) * costoHora);
+            const montoSena = inputAgendaMontoSena ? parseFloat(inputAgendaMontoSena.value || senaPorDefecto) : senaPorDefecto;
+
+            const payload = {
+                cancha_id: canchaId,
+                fecha: fechaForm,
+                hora_inicio: horaForm,
+                duracion: duracionForm,
+                cliente_nombre: clienteNombre,
+                cliente_id: clienteId,
+                estado_pago: pagoForm,
+                estado: 'CONFIRMADO',
+                monto_total: montoTotal
+            };
+
+            const btnSubmit = formAgenda.querySelector('button[type="submit"]');
+            if (btnSubmit) {
                 btnSubmit.disabled = true;
-                btnSubmit.textContent = "Agendando...";
+                btnSubmit.textContent = "Guardando...";
+            }
 
-                try {
-                    const res = await fetch('../api/turnos.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
+            try {
+                const res = await fetch('../api/turnos.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
-                    if (res.ok) {
-                        formAgenda.reset();
-                        modalAgenda.close();
-                        fechaActiva = fechaForm;
-                        await cargarTurnosGrilla();
-                        
-                        if (window.mostrarNotificacion) window.mostrarNotificacion("Turno agendado exitosamente.");
-                        const [h, m] = horaForm.split(':').map(Number);
-                        const topPx = (((h - horaInicio) * 60 + m) / 60) * pxPorHora;
-                        const scrollContainer = document.getElementById('calendario-scroll');
-                        if (scrollContainer) scrollContainer.scrollTo({ top: topPx - 100, behavior: 'smooth' });
+                if (res.ok) {
+                    const dataRes = await res.json();
+                    // Si eligió SEÑA o PAGADO, registrar ingreso en Caja o agregar al ticket
+                    if (pagoForm === 'SENA') {
+                        await fetch('../api/caja.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                usuario_id: 1,
+                                tipo: 'INGRESO',
+                                concepto: `Seña Turno Cancha ${canchaId} - ${clienteNombre} (${horaForm}hs)`,
+                                monto: montoSena
+                            })
+                        });
+                        if (window.mostrarNotificacion) {
+                            window.mostrarNotificacion(`Turno agendado con Seña de $${montoSena.toLocaleString('es-AR')} (Resta pagar $${(montoTotal - montoSena).toLocaleString('es-AR')}).`);
+                        }
+                    } else if (pagoForm === 'PAGADO') {
+                        await fetch('../api/caja.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                usuario_id: 1,
+                                tipo: 'INGRESO',
+                                concepto: `Pago Total Turno Cancha ${canchaId} - ${clienteNombre} (${horaForm}hs)`,
+                                monto: montoTotal
+                            })
+                        });
+                        if (window.mostrarNotificacion) {
+                            window.mostrarNotificacion(`Turno agendado y abonado en su totalidad ($${montoTotal.toLocaleString('es-AR')}).`);
+                        }
                     } else {
-                        const err = await res.json();
-                        if (window.mostrarNotificacion) window.mostrarNotificacion(err.error || "No se pudo registrar el turno.", "error");
+                        if (window.mostrarNotificacion) {
+                            window.mostrarNotificacion(`Turno agendado. Total a cobrar: $${montoTotal.toLocaleString('es-AR')}.`);
+                        }
                     }
-                } catch (e) {
-                    console.error("Error al registrar turno:", e);
-                    if (window.mostrarNotificacion) window.mostrarNotificacion("Error de conexión al guardar turno en el servidor.", "error");
-                } finally {
+
+                    formAgenda.reset();
+                    modalAgenda.close();
+                    fechaActiva = fechaForm;
+                    sincronizarControlesFecha();
+                    await cargarTurnosGrilla();
+                } else {
+                    const err = await res.json();
+                    if (window.mostrarNotificacion) window.mostrarNotificacion(err.error || "No se pudo registrar el turno.", "error");
+                }
+            } catch (e) {
+                console.error("Error al registrar turno:", e);
+                if (window.mostrarNotificacion) window.mostrarNotificacion("Error de conexión al guardar turno.", "error");
+            } finally {
+                if (btnSubmit) {
                     btnSubmit.disabled = false;
                     btnSubmit.textContent = "Confirmar Turno";
                 }
-            });
-        }
+            }
+        });
     }
 
     function scrollAHoraActual() {
         const scrollContainer = document.getElementById('calendario-scroll');
         if (!scrollContainer) return;
         const horaActual = new Date().getHours();
-        // Centrar en la hora actual
         const topPx = Math.max(0, (horaActual - horaInicio - 1) * pxPorHora);
         scrollContainer.scrollTo({ top: topPx, behavior: 'smooth' });
     }
 
     // Inicializar
-    renderizarGrillaBase();
-    cargarTurnosGrilla();
-    renderizarTicket();
-    cargarProductosVentaRapida();
-    setTimeout(scrollAHoraActual, 150);
+    (async () => {
+        await cargarCatalogoCanchas();
+        renderizarGrillaBase();
+        await cargarTurnosGrilla();
+        renderizarTicket();
+        await cargarProductosVentaRapida();
+        setTimeout(scrollAHoraActual, 150);
+    })();
 })();

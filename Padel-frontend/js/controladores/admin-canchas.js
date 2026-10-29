@@ -1,13 +1,21 @@
-(function() {
+(function () {
     console.log("Controlador de Canchas conectado a API MySQL Iniciado");
 
-    // Elementos del panel de parámetros
     const inputSena = document.getElementById('param-sena');
     const inputTiempo = document.getElementById('param-tiempo-cancelacion');
     const inputHora = document.getElementById('param-hora-noche');
     const btnGuardarParametros = document.getElementById('btn-guardar-parametros');
 
-    // 1. Lógica de Parámetros Globales (Almacenados en configuración)
+    // Elementos del Modal de Tarifas
+    const modalTarifa = document.getElementById('modal-tarifa-cancha');
+    const formTarifa = document.getElementById('form-tarifa-cancha');
+    const inputNuevoCosto = document.getElementById('input-nuevo-costo-cancha');
+    const btnCerrarModalTarifa = document.getElementById('btn-cerrar-modal-tarifa');
+    const btnCancelarModalTarifa = document.getElementById('btn-cancelar-modal-tarifa');
+
+    let canchasEstadoLocal = {};
+
+    // Lógica de Parámetros Globales
     function cargarParametros() {
         if (window.Almacenamiento && window.Almacenamiento.obtenerParametros) {
             const params = window.Almacenamiento.obtenerParametros();
@@ -24,18 +32,115 @@
                 tiempoCancelacion: parseInt(inputTiempo.value) || 24,
                 horaNoche: inputHora.value || "18:00"
             };
-            
+
             if (window.Almacenamiento && window.Almacenamiento.guardarParametros) {
                 window.Almacenamiento.guardarParametros(nuevosParams);
-                
-                const textoOriginal = btnGuardarParametros.textContent;
-                btnGuardarParametros.textContent = "¡Guardado con Éxito!";
-                btnGuardarParametros.classList.add('bg-primary-container', 'text-on-primary-container');
-                
-                setTimeout(() => {
-                    btnGuardarParametros.textContent = textoOriginal;
-                    btnGuardarParametros.classList.remove('bg-primary-container', 'text-on-primary-container');
-                }, 2000);
+                if (window.mostrarNotificacion) {
+                    window.mostrarNotificacion("Parámetros generales guardados correctamente.");
+                }
+            }
+        });
+    }
+
+    // Actualizar vista previa en vivo en el modal de tarifas
+    function actualizarPreviaTarifa(valor) {
+        const base = Math.max(0, parseFloat(valor) || 0);
+        const rec90 = Math.round(base * 0.5);
+        const rec120 = Math.round(base * 0.85);
+
+        const el60 = document.getElementById('prev-60');
+        const el90 = document.getElementById('prev-90');
+        const el120 = document.getElementById('prev-120');
+
+        if (el60) el60.textContent = `$${base.toLocaleString('es-AR')}`;
+        if (el90) el90.textContent = `$${(base + rec90).toLocaleString('es-AR')} (+$${rec90.toLocaleString('es-AR')})`;
+        if (el120) el120.textContent = `$${(base + rec120).toLocaleString('es-AR')} (+$${rec120.toLocaleString('es-AR')})`;
+    }
+
+    if (inputNuevoCosto) {
+        inputNuevoCosto.addEventListener('input', (e) => actualizarPreviaTarifa(e.target.value));
+    }
+
+    if (btnCerrarModalTarifa && modalTarifa) {
+        btnCerrarModalTarifa.addEventListener('click', () => modalTarifa.close());
+    }
+    if (btnCancelarModalTarifa && modalTarifa) {
+        btnCancelarModalTarifa.addEventListener('click', () => modalTarifa.close());
+    }
+
+    function abrirModalActualizarTarifa(cancha) {
+        // Bloquear cambio de precios si la cancha está en mantenimiento
+        const toggle = document.getElementById(`toggle${cancha.id}`);
+        if (toggle && !toggle.checked) {
+            if (window.mostrarNotificacion) {
+                window.mostrarNotificacion(`${cancha.nombre} está en mantenimiento. Habilítala primero para modificar su tarifa.`, "error");
+            }
+            return;
+        }
+
+        if (!modalTarifa) return;
+        const costoActual = parseFloat(canchasEstadoLocal[cancha.id]?.costo_base || cancha.costo_base || 8500);
+
+        document.getElementById('tarifa-cancha-id').value = cancha.id;
+        document.getElementById('modal-tarifa-titulo').textContent = `Actualizar Tarifa - ${cancha.nombre}`;
+        document.getElementById('modal-tarifa-subtitulo').textContent = cancha.tipo || 'Pista oficial';
+        inputNuevoCosto.value = costoActual;
+        actualizarPreviaTarifa(costoActual);
+
+        modalTarifa.showModal();
+    }
+
+    if (formTarifa) {
+        formTarifa.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('tarifa-cancha-id').value);
+            const nuevoCosto = parseFloat(inputNuevoCosto.value);
+            const toggle = document.getElementById(`toggle${id}`);
+
+            // Doble validación de seguridad: impedir guardar si está en mantenimiento
+            if (toggle && !toggle.checked) {
+                if (window.mostrarNotificacion) {
+                    window.mostrarNotificacion("No se puede cambiar el precio de una cancha en mantenimiento.", "error");
+                }
+                modalTarifa.close();
+                return;
+            }
+
+            if (isNaN(nuevoCosto) || nuevoCosto <= 0) {
+                if (window.mostrarNotificacion) window.mostrarNotificacion("Ingresá un monto válido mayor a 0.", "error");
+                return;
+            }
+
+            const btnSubmit = document.getElementById('btn-guardar-tarifa-modal');
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.textContent = "Guardando...";
+            }
+
+            try {
+                const putRes = await fetch('../api/canchas.php', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, costo_base: nuevoCosto })
+                });
+
+                if (putRes.ok) {
+                    modalTarifa.close();
+                    if (window.mostrarNotificacion) {
+                        window.mostrarNotificacion(`Tarifa de Cancha ${id} actualizada a $${nuevoCosto.toLocaleString('es-AR')}.`);
+                    }
+                    await cargarCanchasDesdeAPI();
+                } else {
+                    if (window.mostrarNotificacion) window.mostrarNotificacion("Error al actualizar tarifa.", "error");
+                }
+            } catch (err) {
+                console.error("Error:", err);
+                if (window.mostrarNotificacion) window.mostrarNotificacion("Error de conexión al actualizar tarifa.", "error");
+            } finally {
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = `<span class="material-symbols-outlined text-[18px]">check</span> Confirmar Tarifa`;
+                }
             }
         });
     }
@@ -48,6 +153,7 @@
             const canchas = await res.json();
 
             canchas.forEach(cancha => {
+                canchasEstadoLocal[cancha.id] = cancha;
                 const toggle = document.getElementById(`toggle${cancha.id}`);
                 if (!toggle) return;
 
@@ -55,21 +161,19 @@
                 if (!article) return;
 
                 const costoNumerico = parseFloat(cancha.costo_base || cancha.costoBase || 0);
-                const spanCosto = article.querySelector('.text-on-surface.font-headline.font-bold span:nth-child(2)');
+                const spanCosto = article.querySelector('.val-costo-base');
                 if (spanCosto) spanCosto.textContent = costoNumerico.toLocaleString('es-AR');
 
-                // Recargos calculados dinámicamente proporcionalmente
-                const spanRecargo90 = article.querySelector('.space-y-4 > div:nth-child(2) span:nth-child(2)');
+                const spanRecargo90 = article.querySelector('.val-recargo-90');
                 if (spanRecargo90) spanRecargo90.textContent = Math.round(costoNumerico * 0.5).toLocaleString('es-AR');
 
-                const spanRecargo120 = article.querySelector('.space-y-4 > div:nth-child(3) span:nth-child(2)');
+                const spanRecargo120 = article.querySelector('.val-recargo-120');
                 if (spanRecargo120) spanRecargo120.textContent = Math.round(costoNumerico * 0.85).toLocaleString('es-AR');
 
                 const estaActiva = (cancha.activa == 1 || cancha.activa === true);
                 toggle.checked = estaActiva;
                 actualizarVisualToggle(toggle, estaActiva);
 
-                // Evento cambio de estado (Activa / Mantenimiento)
                 toggle.onchange = async (e) => {
                     const nuevaActiva = e.target.checked ? 1 : 0;
                     actualizarVisualToggle(toggle, nuevaActiva === 1);
@@ -81,45 +185,20 @@
                             body: JSON.stringify({ id: cancha.id, activa: nuevaActiva })
                         });
                         if (!putRes.ok) throw new Error("No se pudo actualizar el estado de la cancha.");
+                        if (window.mostrarNotificacion) {
+                            window.mostrarNotificacion(nuevaActiva === 1 ? `${cancha.nombre} habilitada para reservas.` : `${cancha.nombre} puesta en mantenimiento (Tarifas bloqueadas).`);
+                        }
                     } catch (err) {
                         console.error("Error al actualizar estado de cancha:", err);
-                        alert("Error de conexión al actualizar cancha.");
+                        if (window.mostrarNotificacion) window.mostrarNotificacion("Error de conexión al actualizar cancha.", "error");
                         toggle.checked = !e.target.checked;
                         actualizarVisualToggle(toggle, toggle.checked);
                     }
                 };
 
-                // Botón Actualizar Tarifas
-                const botonActualizar = article.querySelector('button');
+                const botonActualizar = article.querySelector('.btn-actualizar-tarifa');
                 if (botonActualizar) {
-                    botonActualizar.onclick = async () => {
-                        const nuevoCostoStr = prompt(`Nuevo costo base por hora para ${cancha.nombre}:`, costoNumerico);
-                        if (nuevoCostoStr !== null && nuevoCostoStr.trim() !== '') {
-                            const nuevoCosto = parseFloat(nuevoCostoStr);
-                            if (isNaN(nuevoCosto) || nuevoCosto <= 0) {
-                                alert("Por favor ingresá un monto numérico válido mayor a 0.");
-                                return;
-                            }
-
-                            try {
-                                const putRes = await fetch('../api/canchas.php', {
-                                    method: 'PUT',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ id: cancha.id, costo_base: nuevoCosto })
-                                });
-                                if (putRes.ok) {
-                                    if (spanCosto) spanCosto.textContent = nuevoCosto.toLocaleString('es-AR');
-                                    if (spanRecargo90) spanRecargo90.textContent = Math.round(nuevoCosto * 0.5).toLocaleString('es-AR');
-                                    if (spanRecargo120) spanRecargo120.textContent = Math.round(nuevoCosto * 0.85).toLocaleString('es-AR');
-                                } else {
-                                    if (window.mostrarNotificacion) window.mostrarNotificacion("Error al actualizar tarifa.", "error");
-                                }
-                            } catch (err) {
-                                console.error("Error:", err);
-                                if (window.mostrarNotificacion) window.mostrarNotificacion("Error de conexión al actualizar tarifa.", "error");
-                            }
-                        }
-                    };
+                    botonActualizar.onclick = () => abrirModalActualizarTarifa(cancha);
                 }
             });
         } catch (error) {
@@ -130,38 +209,36 @@
     function actualizarVisualToggle(toggle, activa) {
         const article = toggle.closest('article');
         if (!article) return;
-        const contenido = article.querySelector('.space-y-4');
-        const boton = article.querySelector('button');
-        
+        const contenido = article.querySelector('.contenedor-tarifas-cancha');
+        const boton = article.querySelector('.btn-actualizar-tarifa');
+
         let labelEstado = article.querySelector('.badge-estado-cancha');
         if (!labelEstado) {
             labelEstado = document.createElement('span');
-            labelEstado.className = 'badge-estado-cancha text-xs font-bold mr-3';
             toggle.closest('label').parentElement.insertBefore(labelEstado, toggle.closest('label'));
         }
 
         if (activa) {
             labelEstado.textContent = 'Habilitada';
-            labelEstado.className = 'badge-estado-cancha text-xs font-bold text-primary mr-3';
-            if (contenido) contenido.classList.remove('opacity-50', 'pointer-events-none', 'grayscale');
+            labelEstado.className = 'badge-estado-cancha text-[11px] font-bold bg-[#e8f5e9] text-[#2e7d32] px-2.5 py-1 rounded-md mr-2.5 border border-[#4caf50]/20';
+            if (contenido) contenido.classList.remove('opacity-45', 'pointer-events-none', 'grayscale');
             if (boton) {
-                boton.textContent = 'Actualizar Tarifas';
-                boton.classList.remove('text-secondary');
-                boton.classList.add('text-primary');
+                boton.disabled = false;
+                boton.innerHTML = `<span class="material-symbols-outlined text-[18px]">edit_square</span> Actualizar Tarifas`;
+                boton.className = 'btn-actualizar-tarifa mt-6 w-full py-3 px-4 rounded-xl font-headline font-bold text-sm bg-primary/10 text-primary hover:bg-primary hover:text-on-primary transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm';
             }
         } else {
-            labelEstado.textContent = 'En Mantenimiento';
-            labelEstado.className = 'badge-estado-cancha text-xs font-bold text-on-surface-variant/70 mr-3';
-            if (contenido) contenido.classList.add('opacity-50', 'pointer-events-none', 'grayscale');
+            labelEstado.textContent = 'Mantenimiento';
+            labelEstado.className = 'badge-estado-cancha text-[11px] font-bold bg-surface-container-high text-on-surface-variant px-2.5 py-1 rounded-md mr-2.5';
+            if (contenido) contenido.classList.add('opacity-45', 'pointer-events-none', 'grayscale');
             if (boton) {
-                boton.textContent = 'En Mantenimiento';
-                boton.classList.remove('text-primary');
-                boton.classList.add('text-secondary');
+                boton.disabled = true;
+                boton.innerHTML = `<span class="material-symbols-outlined text-[18px]">lock</span> En Mantenimiento (Bloqueado)`;
+                boton.className = 'btn-actualizar-tarifa mt-6 w-full py-3 px-4 rounded-xl font-headline font-bold text-sm bg-surface-container text-on-surface-variant/60 flex items-center justify-center gap-2 cursor-not-allowed';
             }
         }
     }
 
-    // Inicializar
     cargarParametros();
     cargarCanchasDesdeAPI();
 })();

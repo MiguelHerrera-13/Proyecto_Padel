@@ -1,5 +1,5 @@
 (function() {
-    // 1. Contenedor de Toast flotantes para notificaciones emergentes
+    // Contenedor de Toast flotantes para notificaciones emergentes
     let toastContainer = document.getElementById('toast-container-global');
     if (!toastContainer) {
         toastContainer = document.createElement('div');
@@ -8,10 +8,10 @@
         document.body.appendChild(toastContainer);
     }
 
-    // Función global para mostrar Toasts elegantes en reemplazo de alert()
+    // Función global para mostrar Toasts elegantes
     window.mostrarNotificacion = function(mensaje, tipo = 'exito') {
         const toast = document.createElement('div');
-        toast.className = `pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl text-sm font-semibold transition-all duration-300 transform translate-y-4 opacity-0 border backdrop-blur-md ${
+        toast.className = `pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-xl shadow-xl text-sm font-semibold transition-all duration-300 transform translate-y-4 opacity-0 border backdrop-blur-md ${
             tipo === 'exito' ? 'bg-[#e8f5e9]/95 text-[#1b5e20] border-[#4caf50]/40' : 
             (tipo === 'error' ? 'bg-error-container/95 text-on-error-container border-error/40' : 
             'bg-surface-container-highest/95 text-on-surface border-outline-variant/40')
@@ -20,7 +20,7 @@
         const icono = tipo === 'exito' ? 'check_circle' : (tipo === 'error' ? 'error' : 'info');
         toast.innerHTML = `
             <span class="material-symbols-outlined text-[22px] flex-shrink-0" style="font-variation-settings: 'FILL' 1;">${icono}</span>
-            <span class="flex-1">${mensaje}</span>
+            <span class="flex-1 text-left leading-snug">${mensaje}</span>
             <button class="text-xs opacity-60 hover:opacity-100 cursor-pointer p-1"><span class="material-symbols-outlined text-[16px]">close</span></button>
         `;
 
@@ -31,12 +31,10 @@
 
         toastContainer.appendChild(toast);
 
-        // Animación de entrada
         requestAnimationFrame(() => {
             toast.classList.remove('translate-y-4', 'opacity-0');
         });
 
-        // Auto eliminación a los 4 segundos
         setTimeout(() => {
             if (toast.parentElement) {
                 toast.classList.add('translate-y-4', 'opacity-0');
@@ -45,7 +43,7 @@
         }, 4000);
     };
 
-    // 2. Control de la campanita y Dropdown
+    // Control de la campanita y Dropdown
     const btnNotificaciones = document.getElementById('btn-notificaciones');
     const badgeNotificaciones = document.getElementById('badge-notificaciones');
     const dropdownPanel = document.getElementById('panel-notificaciones-dropdown');
@@ -65,54 +63,77 @@
             let items = [];
 
             if (usuario.rol === 'ADMIN' || usuario.rol === 'EMPLEADO') {
-                const [resTurnos, resCaja, resStock] = await Promise.all([
+                const [resTurnos, resCaja, resStock, resProv] = await Promise.all([
                     fetch('../api/turnos.php'),
                     fetch('../api/caja.php'),
-                    fetch('../api/stock.php')
+                    fetch('../api/stock.php'),
+                    fetch('../api/proveedores.php')
                 ]);
 
                 const turnos = resTurnos.ok ? await resTurnos.json() : [];
                 const caja = resCaja.ok ? await resCaja.json() : [];
                 const stock = resStock.ok ? await resStock.json() : [];
+                const proveedores = resProv.ok ? await resProv.json() : [];
 
-                // 1. Alertas de Stock crítico (solo admin)
+                // Alertas de Stock crítico (redirige a #/admin/stock)
                 if (usuario.rol === 'ADMIN' && Array.isArray(stock)) {
-                    stock.filter(p => parseInt(p.stock_actual) <= 5).slice(0, 2).forEach(p => {
+                    stock.filter(p => parseInt(p.stock_actual) <= 5).slice(0, 3).forEach(p => {
                         items.push({
                             id: `stock-${p.id}`,
-                            tipo: 'alerta',
-                            icono: 'warning',
-                            color: 'text-error bg-error/10',
+                            tipo: 'alerta_stock',
+                            icono: 'inventory_2',
+                            color: 'text-error bg-error-container/50',
                             titulo: `Bajo Stock: ${p.nombre}`,
-                            detalle: `Quedan solo ${p.stock_actual} unidades en inventario.`
+                            detalle: `Quedan solo ${p.stock_actual} unidades. Tocá para ir a Inventario.`,
+                            destino: '#/admin/stock',
+                            accionExtra: 'FILTRAR_BAJO_STOCK'
                         });
                     });
                 }
 
-                // 2. Últimos turnos agendados
+                // Alertas de Proveedores con Pago Pendiente (redirige a #/admin/proveedores)
+                if (usuario.rol === 'ADMIN' && Array.isArray(proveedores)) {
+                    proveedores.filter(pr => pr.estado_pago === 'PAGO_PENDIENTE' && parseFloat(pr.saldo_pendiente) > 0).slice(0, 2).forEach(pr => {
+                        items.push({
+                            id: `prov-${pr.id}`,
+                            tipo: 'alerta_proveedor',
+                            icono: 'local_shipping',
+                            color: 'text-[#e65100] bg-[#fff3e0]',
+                            titulo: `Pago Pendiente: ${pr.empresa}`,
+                            detalle: `Saldo pendiente: $${parseFloat(pr.saldo_pendiente).toLocaleString('es-AR')}. Tocá para ver Proveedores.`,
+                            destino: '#/admin/proveedores',
+                            accionExtra: 'FILTRAR_PENDIENTES'
+                        });
+                    });
+                }
+
+                // Últimos turnos agendados
                 if (Array.isArray(turnos)) {
-                    turnos.slice(0, 3).forEach(t => {
+                    turnos.filter(t => t.estado === 'CONFIRMADO').slice(0, 2).forEach(t => {
                         items.push({
                             id: `turno-${t.id}`,
                             tipo: 'turno',
                             icono: 'event_available',
-                            color: 'text-primary bg-primary/10',
+                            color: 'text-primary bg-primary/15',
                             titulo: `Reserva: ${t.cliente_nombre}`,
-                            detalle: `Cancha ${t.cancha_id} • ${t.fecha} ${t.hora_inicio.substring(0,5)}hs (${t.estado_pago})`
+                            detalle: `Cancha ${t.cancha_id} • ${t.fecha} ${(t.hora_inicio || '').substring(0,5)}hs (${t.estado_pago})`,
+                            destino: usuario.rol === 'ADMIN' ? '#/admin/dashboard' : '#/empleado/agenda'
                         });
                     });
                 }
 
-                // 3. Últimos ingresos de caja
+                // Últimos movimientos de caja (redirige a #/empleado/caja)
                 if (Array.isArray(caja)) {
-                    caja.filter(c => c.tipo.includes('INGRESO')).slice(0, 2).forEach(m => {
+                    caja.slice(0, 2).forEach(m => {
+                        const esIngreso = (m.tipo || '').includes('INGRESO');
                         items.push({
                             id: `caja-${m.id}`,
                             tipo: 'pago',
                             icono: 'payments',
-                            color: 'text-[#2e7d32] bg-[#e8f5e9]',
-                            titulo: `Cobro Registrado`,
-                            detalle: `$${parseFloat(m.monto).toLocaleString('es-AR')} - ${m.concepto}`
+                            color: esIngreso ? 'text-[#2e7d32] bg-[#e8f5e9]' : 'text-error bg-error-container/40',
+                            titulo: esIngreso ? `Ingreso en Caja` : `Egreso / Retiro en Caja`,
+                            detalle: `$${parseFloat(m.monto).toLocaleString('es-AR')} - ${m.concepto}`,
+                            destino: '#/empleado/caja'
                         });
                     });
                 }
@@ -128,9 +149,10 @@
                             id: `cliente-turno-${t.id}`,
                             tipo: 'turno',
                             icono: 'sports_tennis',
-                            color: 'text-primary bg-primary/10',
+                            color: 'text-primary bg-primary/15',
                             titulo: `¡Partido Confirmado!`,
-                            detalle: `Cancha ${t.cancha_id} el ${t.fecha} a las ${t.hora_inicio.substring(0,5)}hs.`
+                            detalle: `Cancha ${t.cancha_id} el ${t.fecha} a las ${(t.hora_inicio || '').substring(0,5)}hs. Tocá para ver tus reservas.`,
+                            destino: '#/cliente/mis-reservas'
                         });
                     });
                 }
@@ -150,24 +172,27 @@
             let listaHTML = '';
             if (items.length === 0) {
                 listaHTML = `
-                    <div class="py-8 text-center text-on-surface-variant flex flex-col items-center gap-2">
+                    <div class="py-10 text-center text-on-surface-variant flex flex-col items-center gap-2">
                         <span class="material-symbols-outlined text-4xl text-outline-variant">notifications_off</span>
                         <p class="text-xs font-medium">No tenés notificaciones pendientes.</p>
                     </div>`;
             } else {
-                items.forEach(it => {
+                items.forEach((it, idx) => {
                     const noLeida = !notificacionesLeidas.includes(it.id);
                     listaHTML += `
-                    <div class="p-3 rounded-xl transition-all flex items-start gap-3 hover:bg-surface-container cursor-pointer border-b border-outline-variant/10 ${noLeida ? 'bg-surface-container-low/80' : ''}">
-                        <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${it.color}">
+                    <div data-idx="${idx}" class="item-notificacion p-3.5 rounded-xl transition-all flex items-start gap-3 hover:bg-surface-container cursor-pointer border-b border-outline-variant/10 last:border-0 text-left ${noLeida ? 'bg-surface-container-low' : ''}">
+                        <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${it.color}">
                             <span class="material-symbols-outlined text-[18px]">${it.icono}</span>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <p class="text-xs font-bold text-on-surface flex items-center justify-between">
+                            <p class="text-xs font-bold text-on-surface flex items-center justify-between gap-2">
                                 <span class="truncate">${it.titulo}</span>
-                                ${noLeida ? '<span class="w-2 h-2 rounded-full bg-primary flex-shrink-0"></span>' : ''}
+                                <span class="flex items-center gap-1 flex-shrink-0">
+                                    ${noLeida ? '<span class="w-2 h-2 rounded-full bg-primary"></span>' : ''}
+                                    <span class="material-symbols-outlined text-[14px] text-secondary">chevron_right</span>
+                                </span>
                             </p>
-                            <p class="text-[11px] text-on-surface-variant mt-0.5 line-clamp-2">${it.detalle}</p>
+                            <p class="text-[11px] text-on-surface-variant mt-0.5 line-clamp-2 leading-relaxed">${it.detalle}</p>
                         </div>
                     </div>`;
                 });
@@ -176,8 +201,8 @@
             dropdownPanel.innerHTML = `
                 <div class="p-4 border-b border-outline-variant/20 bg-surface-container-low flex justify-between items-center">
                     <div class="flex items-center gap-2">
-                        <h3 class="font-headline font-bold text-on-surface text-sm">Notificaciones</h3>
-                        <span class="bg-primary/20 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">En Vivo</span>
+                        <h3 class="font-headline font-bold text-on-surface text-sm">Centro de Notificaciones</h3>
+                        <span class="bg-primary/15 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">En Vivo</span>
                     </div>
                     <button id="btn-marcar-leidas" class="text-[11px] text-primary hover:underline font-bold cursor-pointer">
                         Marcar leídas
@@ -188,9 +213,44 @@
                 </div>
             `;
 
+            // Evento al tocar cualquier notificación: marcar leída y redirigir a la sección correspondiente
+            dropdownPanel.querySelectorAll('.item-notificacion').forEach(el => {
+                el.addEventListener('click', () => {
+                    const idx = parseInt(el.dataset.idx);
+                    const it = items[idx];
+                    if (!it) return;
+
+                    if (!notificacionesLeidas.includes(it.id)) {
+                        notificacionesLeidas.push(it.id);
+                        localStorage.setItem('padel_notif_leidas', JSON.stringify(notificacionesLeidas));
+                    }
+
+                    // Guardar filtro especial si aplica 
+                    if (it.accionExtra === 'FILTRAR_BAJO_STOCK') {
+                        sessionStorage.setItem('notif_filtro_stock', 'CRITICO');
+                    } else if (it.accionExtra === 'FILTRAR_PENDIENTES') {
+                        sessionStorage.setItem('notif_filtro_prov', 'PAGO_PENDIENTE');
+                    }
+
+                    // Cerrar dropdown
+                    dropdownPanel.classList.add('hidden');
+                    dropdownPanel.classList.remove('flex');
+
+                    // Navegar al destino
+                    if (it.destino) {
+                        if (window.location.hash === it.destino) {
+                            window.dispatchEvent(new HashChangeEvent('hashchange'));
+                        } else {
+                            window.location.hash = it.destino;
+                        }
+                    }
+                });
+            });
+
             const btnMarcar = document.getElementById('btn-marcar-leidas');
             if (btnMarcar) {
-                btnMarcar.addEventListener('click', () => {
+                btnMarcar.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     items.forEach(it => {
                         if (!notificacionesLeidas.includes(it.id)) notificacionesLeidas.push(it.id);
                     });
@@ -211,7 +271,6 @@
         }
     }
 
-    // Toggle al hacer clic en la campanita
     if (btnNotificaciones && dropdownPanel) {
         btnNotificaciones.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -226,7 +285,6 @@
             }
         });
 
-        // Cerrar dropdown al hacer clic fuera o presionar escape
         document.addEventListener('click', (e) => {
             if (!dropdownPanel.contains(e.target) && !btnNotificaciones.contains(e.target)) {
                 dropdownPanel.classList.add('hidden');
@@ -242,6 +300,6 @@
         });
     }
 
-    // Chequeo inicial de alertas al cargar la app
-    setTimeout(consultarNotificaciones, 1000);
+    window.actualizarNotificacionesGlobal = consultarNotificaciones;
+    setTimeout(consultarNotificaciones, 800);
 })();

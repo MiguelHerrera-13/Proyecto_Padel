@@ -1,9 +1,24 @@
+window.obtenerFechaHoyLocal = function() {
+    const hoy = new Date();
+    const anio = hoy.getFullYear();
+    const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+    const dia = String(hoy.getDate()).padStart(2, '0');
+    return `${anio}-${mes}-${dia}`;
+};
+
+window.aplicarRestriccionFechas = function(root = document) {
+    const hoyIso = window.obtenerFechaHoyLocal();
+    root.querySelectorAll('input[type="date"]').forEach(input => {
+        input.min = hoyIso;
+        if (input.value && input.value < hoyIso) {
+            input.value = hoyIso;
+        }
+    });
+};
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Verificar si el usuario logueado
     const usuarioLogueado = window.Almacenamiento ? window.Almacenamiento.obtenerUsuarioLogueado() : null;
     
-   
     if (window.LayoutManager) {
         window.LayoutManager.inicializar(usuarioLogueado);
     }
@@ -21,19 +36,16 @@ document.addEventListener('DOMContentLoaded', () => {
         'CLIENTE': '#/cliente/reserva'
     };
 
-    
     window.addEventListener('hashchange', () => {
         procesarRutaActual(usuarioLogueado);
     });
 
-    
     if (!window.location.hash || window.location.hash === '#/') {
         window.location.hash = rutasPorDefecto[usuarioLogueado.rol] || '#/admin/dashboard';
     } else {
         procesarRutaActual(usuarioLogueado);
     }
 
-    // 4. Interceptar todos los clics en el documento usando delegación de eventos
     document.body.addEventListener('click', (evento) => {
         const botonCerrarSesion = evento.target.closest('#btn-cerrar-sesion, .btn-cerrar-sesion, #btn-logout, .btn-logout');
         const textoElemento = evento.target.textContent || '';
@@ -90,31 +102,32 @@ async function cargarVista(url) {
         const analizador = new DOMParser();
         const documento = analizador.parseFromString(html, 'text/html');
         
-        // Inyectar en el contenedor dinámico en vez de reemplazar el body entero
         const contenedor = document.getElementById('contenido-dinamico');
         if (!contenedor) {
             console.error("No se encontró el #contenido-dinamico");
             return;
         }
 
-        // Agregar animación de entrada (clase global fade-in)
         contenedor.classList.remove('fade-in');
-        // trigger reflow
         void contenedor.offsetWidth;
         
         contenedor.innerHTML = documento.body.innerHTML;
         contenedor.classList.add('fade-in');
         
+        // Aplicar restricción de fecha mínima (Hoy) a todos los calendarios de la vista
+        if (window.aplicarRestriccionFechas) {
+            window.aplicarRestriccionFechas(contenedor);
+        }
+
         // Re-ejecutar scripts
         const scripts = contenedor.querySelectorAll('script');
         scripts.forEach(scriptAntiguo => {
             const scriptNuevo = document.createElement('script');
             Array.from(scriptAntiguo.attributes).forEach(attr => scriptNuevo.setAttribute(attr.name, attr.value));
             if (scriptAntiguo.src) {
-                // Añadir un timestamp para evitar la caché del navegador en los JS de los controladores
-                const url = new URL(scriptAntiguo.src, window.location.href);
-                url.searchParams.set('v', new Date().getTime());
-                scriptNuevo.src = url.href;
+                const urlObj = new URL(scriptAntiguo.src, window.location.href);
+                urlObj.searchParams.set('v', new Date().getTime());
+                scriptNuevo.src = urlObj.href;
             } else {
                 scriptNuevo.textContent = scriptAntiguo.textContent;
             }
